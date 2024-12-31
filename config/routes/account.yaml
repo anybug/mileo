@@ -1,0 +1,8 @@
+profile: 
+  path : /account/reports
+  controller: App\Controller\ProfileController::index
+
+edit_profile:
+  path: /account/{id}/edit
+  controller: App\Controller\ProfileController::editUser
+

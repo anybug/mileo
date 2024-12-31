@@ -1,0 +1,32 @@
+App\Entity\ReportLine:
+  type: entity
+  id:
+    id:
+      type: integer
+      generator: { strategy: AUTO }
+  fields:
+    travel_date:
+        type: date
+    start:
+        type: string(255)
+    end:
+        type: string(255)
+    km:
+        type: integer
+        default: 0
+    is_return:
+        type: boolean
+        default: false
+    km_total:
+        type: integer
+        default: 0
+    comment:
+          type: string
+  manyToOne:
+    report:
+      targetEntity: App\Entity\Report
+      inversedBy: lines
+      joinColumn:
+        name: report_id
+        referencedColumnName: id
+        onDelete: cascade

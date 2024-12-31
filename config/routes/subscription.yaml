@@ -1,0 +1,11 @@
+subscription: 
+  path: /subscription/infos
+  controller: App\Controller\SubscriptionController::index
+
+subfree:
+  path: /subscription/getFreeSub
+  controller: App\Controller\SubscriptionController::subFree
+
+btnredirect:
+  path: /subscription/redirect/{id}
+  controller: App\Controller\SubscriptionController::btnRedirectSub

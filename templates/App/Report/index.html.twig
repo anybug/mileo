@@ -1,0 +1,85 @@
+{# DO THIS: the '!' symbol tells Symfony to extend from the original template #}
+{% extends '@!EasyAdmin/crud/index.html.twig' %}
+
+{% block filters %}
+
+    {% if ea.request.query.all['filters'] is defined %}
+        {% set applied_filters = ea.request.query.all['filters']|default([])|keys %}
+
+        <script>
+            $.ajax({
+                type: 'GET',
+                url: '{{ ea_url().setAction('renderFilters').includeReferrer()|raw }}',
+                data: {},
+                success: function(data){
+                    $('.ajaxFilters').html(data);
+                }
+            });
+
+            $(document).on('change', '#filters_Period_value', function(e) {
+                document.getElementById("filters").submit();
+            });
+        </script>
+
+        <div class="ajaxFilters action-filters">
+
+        </div>
+    {% endif %}
+{% endblock filters %}
+{% block global_actions %}
+
+    <div class="global-actions">
+        {% for action in global_actions %}
+            {{ include(action.templatePath, { action: action }, with_context = false) }}
+        {% endfor %}
+    </div>
+{% endblock global_actions %}
+
+{% block table_footer %}
+    {% if num_results > 0 %}
+        {% set applied_filters_Period = ea.request.query.all()['filters']['Period'] %}
+        {% set foo = applied_filters_Period.value|split(' ') %}
+        
+        <tr class="bg-secondary text-primary">
+            <th colspan="2" class="text-primary">{{ 'Total'|trans }} {{ 'year'|trans }} {% for item in foo %}{{ item|trans }} {% endfor %}</th>
+            {#<th colspan="2" class="text-primary">{{ 'Total'|trans }} {{ 'year'|trans }} {{ applied_filters_Period.value }}</th>#}
+            <th>{{ totals.km }} km</th>
+            <th>{{ totals.amount|number_format(2, ',', ' ') }} {{ 'EUR'|currency_symbol }}</th>
+            {% set pdfUrl = ea_url()
+                .setAction('generatePdfPerYear') %}
+            <th><a class="btn btn-primary float-end" href="{{ pdfUrl|raw }}"><i class="fa fa-download"></i> {{ 'Télécharger rapport annuel'|trans }} {% for item in foo %}{{ item|trans }} {% endfor %}</a></th>
+        </tr>
+    {% endif %}
+    {% for vt in vehiculesTotals %}
+
+        {% set form_change_scale_action = ea_url()
+            .setAction('scaleChangeForYear')
+            .set('vrid', vt.Vr.id)
+            .includeReferrer()
+        %}
+
+    <tr class="bg-light text-secondary">
+        <td colspan="2">{{ vt.Vehicule }}</td>
+            <td> 
+                {{ vt.km }} km 
+                {% if vt.warning is defined %}
+                    <i class="fa fa-exclamation-triangle mx-2 text-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="{{vt.warning|trans}}"></i>           
+                {% endif %}
+
+                {% if vt.info is defined %}
+                    <i class="fa fa-circle-info mx-2 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{vt.info|trans}}"></i>           
+                {% endif %}
+            </td>
+        <td>
+            {{ vt.amount|number_format(2, ',', ' ') }} {{ 'EUR'|currency_symbol }}
+            
+        </td>
+        <td>{{ form(vt.form) }}</td>
+    </tr>
+
+    {% endfor %}
+{% endblock %}
+
+{% block paginator %}
+
+{% endblock paginator %}

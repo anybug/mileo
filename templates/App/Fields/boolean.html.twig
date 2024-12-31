@@ -1,0 +1,8 @@
+<span class="badge {{ field.value == true ? 'badge-boolean-true' : 'badge-boolean-false' }} fs-4">
+    {% if field.value == true %}
+        <i class="fa fa-check text-success"></i>
+    {% else %}
+        <i class="far fa-times-circle text-danger"></i>
+    {% endif %}
+</span>
+

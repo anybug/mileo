@@ -1,0 +1,16 @@
+payment:
+  path: /subscription/payment
+  controller: App\Controller\PaymentController::prepareAction
+
+payment_success:
+  path: /subscription/payment/success
+  controller: App\Controller\PaymentController::successAction
+  
+payment_cancel:
+  path: /subscription/payment/cancel
+  controller: App\Controller\PaymentController::cancelAction
+
+checkout:
+  path: /subscription/payment/{id}/checkout
+  controller: App\Controller\PaymentController::checkout
+

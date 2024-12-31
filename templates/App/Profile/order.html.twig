@@ -1,0 +1,64 @@
+{% extends 'App/advanced_layout.html.twig' %}
+{% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %}
+
+{% set title = "Abonnement Pro : accès à toutes fonctionnalités pendant 12 mois"|trans %}
+
+{% block content_title %}
+    {{ title }}
+{% endblock %}
+
+{% block main %}
+<div class="d-flex justify-content-center card-group mt-4">
+  <div class="col-lg-4">
+    <div class="card shadow-lg mb-4 pb-4">
+      <div class="card-header border-bottom-0 pt-4">
+        <div class="d-flex justify-content-center">
+          {% set priceExcVat = plan.getPricePerYear()|number_format %}
+          {% set priceIncVat = priceExcVat*1.2 %}
+          <h4 class="h2 fw-bold d-flex">{{ priceExcVat }}€ HT <span class="text-secondary fw-normal px-1">({{ priceIncVat }}€ TTC)</span></h4>
+        </div>
+      </div>
+      <div class="card-body mx-auto">
+        <ul class="list-unstyled mb-4">
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary">Nombre de véhicules illimité</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Adresses favorites illimitées</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Nombre de trajets illimité</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Saisie trajet par trajet ou au mois</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Calcul automatique de vos trajets</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Export des rapports mensuel et annuels au format PDF</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Accès au support 5/7j de 9h à 18h</span></li>
+          <li class="text-700 py-2"><i class="fa-solid fa-circle-check text-success"></i> <span class="text-secondary"> Règlement 100% sécurisé</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card shadow-lg mb-4 mx-5">
+      <div class="card-header border-bottom-0 pt-4">
+        <div class="d-flex justify-content-center">
+          <h4 class="h2 fw-bold">{{ 'Coordonnées de facturation'|trans }}</h4>
+        </div>
+      </div>
+      <div class="card-body mx-auto">
+        {% for label, messages in app.flashes %}
+          {% for message in messages %}
+              <div class="alert alert-{{ label }}" role="alert">
+                  {{ message|nl2br }}
+              </div>
+          {% endfor %}
+        {% endfor %}
+        {{ form_start(form) }}
+          <div class="row">
+            <div class="col-12">{{ form_row(form.billingName) }}</div>
+            <div class="col-12">{{ form_row(form.billingAddress) }}</div>
+            <div class="col-6">{{ form_row(form.billingPostcode) }}</div>
+            <div class="col-6">{{ form_row(form.billingCity) }}</div>
+            <div class="col-12 text-right f-2">{{ form_row(form.submit) }}</div>
+          </div>
+        {{ form_end(form) }}
+      </div>
+    </div>    
+  </div>
+</div>
+{% endblock main %}

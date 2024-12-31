@@ -1,0 +1,58 @@
+{% extends '@!EasyAdmin/crud/index.html.twig' %}
+
+{% block main %}
+
+<quote><a href="https://www.service-public.fr/particuliers/actualites/A14686" target="_blank">Sources impôts - Publié le 09 avril 2024</a></quote>
+
+
+<h3 class="mt-5">{{ "Barème kilométrique applicable aux voitures"|trans }}</h3>
+{% set tscales = [] %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>{{ "Puissance administrative"|trans }}</th>
+            {% for header, scales in car_scales %}
+                <th>{{ header }}</th>
+                {% set tscales = tscales|merge(scales) %}
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>    
+            {% for power, amount in tscales %}
+                <tr>
+                    <td>{{ power }}</td>
+                    {% for header, scales in car_scales %}
+                        <td>{{ car_scales[header][power] }}</td>
+                    {% endfor %}                   
+                </tr>
+
+            {% endfor %}
+    </tbody>
+</table>
+
+<h3 class="mt-5">{{ "Barème kilométrique applicable aux deux-roues"|trans }}</h3>
+{% set tscales = [] %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>{{ "Puissance administrative"|trans }}</th>
+            {% for header, scales in bike_scales %}
+                <th>{{ header }}</th>
+                {% set tscales = tscales|merge(scales) %}
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>    
+            {% for power, amount in tscales %}
+                <tr>
+                    <td>{{ power }}</td>
+                    {% for header, scales in bike_scales %}
+                        <td>{{ bike_scales[header][power] }}</td>
+                    {% endfor %}                   
+                </tr>
+
+            {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

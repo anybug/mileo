@@ -1,0 +1,49 @@
+{% extends '@EasyAdminDashboard/Default/index.html.twig' %}
+
+{% block page_title %}
+    {% apply spaceless %}
+        {{ dashboard.title|default('Welcome')|trans }}
+    {% endapply %}
+{% endblock %}
+
+{% block main %}
+
+    {{ parent() }}
+
+
+<div class="dashboard-content row m-1">
+    <div class="mt-3 pb-3 col-12 border-bottom border-light">
+        <h3 class="text-primary mb-3">{{ "Statistiques"|trans }}</h3>
+        {% if years is defined and years|length > 0 %}
+            <form action="{{ ea_url() }}" method="GET" id="yearSelected">
+                <select class="form-control form-select mb-2 yearSelected d-inline-flex" name="yearSelected" style="width: 100px;">
+                    {% for year in years %}
+                        <option name="yearSelected" value="{{year}}" {% if yearSelected == year %}selected="selected"{%endif %}>{{year}}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="menuIndex" value="{{ app.request.get('menuIndex') }}">
+                <input type="hidden" name="submenuIndex" value="{{ app.request.get('submenuIndex') }}">
+            </form>
+            <script>
+                $('.yearSelected').on('change', function(){
+                    console.log('changed!');
+                    $('#yearSelected').submit();
+                });
+            </script>
+
+            <div class="card-group">
+                {% if chartAnnuel.data.labels %}
+                    <div class="p-5 col-lg-6">{{ render_chart(chartAnnuel) }}</div>
+                {% endif %}
+                {% if chartTotal.data.labels %}
+                    <div class="p-5 col-lg-6">{{ render_chart(chartTotal) }}</div>
+                {% endif %}
+            {% else %}
+                <p>Vous n'avez pas encore de trajets.</p>
+            {% endif %}
+            </div>
+    </div>
+
+</div>
+    
+{% endblock %}

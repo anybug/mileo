@@ -1,0 +1,114 @@
+{% extends 'Front/layout/base-layout-applab.html.twig' %}
+
+
+{% block javascripts %}
+    <script type="text/javascript">
+        addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); }
+    </script>
+{% endblock %}
+
+{% block page_content %}
+
+      <!-- ============================================-->
+      <!-- <section> begin ============================-->
+      <section class="py-6">
+
+        <div class="container-lg">
+          <div class="row align-items-center">
+            <h1 class="fw-bold fs-4 display-3 lh-sm mt-4">Connexion à votre compte Mileo</h1>
+			{% for label, messages in app.flashes %}
+				{% for message in messages %}
+					<div class="alert alert-{{ label }} alert-primary m-0 mt-4" role="alert">
+						{{ message|nl2br }}
+					</div>
+				{% endfor %}
+			{% endfor %}
+
+            <div class="col-md-5 text-center text-md-start mt-0">
+                
+				<div class="auth-box">
+                    
+                        {% if error|default(false) %}
+                            <div class="w-100 alert alert-danger rounded mb-3">
+                                <i class="fas fa-times-circle mr-1"></i>
+                                {{ error.messageKey|trans(error.messageData, 'messages') }}
+                            </div>
+                        {% endif %}
+
+                        <form method="post" action="{{ action|default('') }}">
+                            <input type="hidden" name="{{ target_path_parameter|default('_target_path') }}" value="{{ target_path|default(ea is defined and ea.context != null ? path(ea.dashboardRouteName) : '/') }}" />
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-control-label required" for="email">{{ "Email address"|trans }}</label>
+                                <div class="form-widget">
+                                    <input type="text" id="email" name="_email" class="form-control" value="{{ last_username|default('') }}" required autofocus autocomplete="username">
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-control-label required" for="password">{{ "Password"|trans }}</label>
+                                <div class="form-widget">
+                                    <input type="password" id="password" name="_password" class="form-control" required autocomplete="current-password">
+                                </div>
+
+                                <div class="mt-2">
+                                    <a href="{{ path('forgotten_password') }}" class="text-primary">{{ "Forgot password ?"|trans }}</a>
+                                </div>
+                                
+                            </div>
+
+                            <div class="form-group">
+                            {#
+                                <input class="form-check-input" type="checkbox" id="remember_me" name="_remember_me">
+                                <label class="form-check-label" for="remember_me">
+                                    {{ "Remember me ?"|trans }}
+                                </label>
+                            #}
+                                
+                            </div>
+
+                            <div class="form-group text-center">
+                                <button type="submit" class="form-control btn btn-primary btn-lg btn-block">{{ "Connect"|trans }}</button>
+                            </div>
+                        </form>
+				    	
+				</div>
+
+                <div class="or-container"><div class="line-separator"></div> <div class="or-label">{{ "or"|trans }}</div><div class="line-separator"></div></div>
+
+                <div class="row">
+                    <div class="text-center">
+                        <a class="btn btn-lg btn-outline-primary btn-block text-uppercase form-control" href="{{ path('connect_google') }}"><img src="https://img.icons8.com/color/16/000000/google-logo.png">&nbsp;&nbsp;&nbsp;{{ "Connect with Google"|trans }}</a>
+                    </div>
+                </div>    
+			
+            </div>
+
+			<div class="col-md-7 order-md-0 text-center text-md-start mt-4">
+
+                <p class="my-4 pe-xl-5 text-center">
+				  Si vous n'avez pas encore de compte, vous pouvez en créer un en cliquant ci-dessous. <br />
+                  La création d'un compte est gratuite et sans engagement.
+				</p>
+                <div class="text-center">
+				    <a class="btn btn-lg btn-outline-primary rounded-pill hover-top" href="{{ path('security_registration') }}" role="button">{{ 'Créer un compte gratuit'|trans }}</a>
+                </div>
+                
+
+				<div class="row align-items-center mt-4">
+					<div class="col-lg-12 order-md-1 text-center text-md-start z-index-2 cta-image">
+						<img class="img-fluid mb-4 mb-md-0" src="assets/img/illustrations/cta-original.png" width="720" alt="" />
+					</div>
+				</div>
+            </div>
+
+        </div>
+        <!-- end of .container-->
+
+      </section>
+      <!-- <section> close ============================-->
+      <!-- ============================================-->
+
+
+{% endblock %}

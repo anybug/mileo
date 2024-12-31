@@ -1,0 +1,106 @@
+parameters:
+  easy_admin_dashboard:
+    title: "Bienvenue sur votre espace Mileo"
+    blocks:
+## ADMIN ##    
+      Bloc1:
+        label: Management
+        size: 12
+        css_class: dark
+        permissions: ['ROLE_ADMIN']
+        items:
+          User:
+            label: "Users"
+            size: 3
+            css_class: dark
+            class: App\Entity\User
+            icon:  cog
+            controller: App\Controller\Admin\UserCrudController
+            link_label: "Users list"
+            #permissions: ['ROLE_ADMIN']
+          Order:
+            label: "Orders"
+            size: 3
+            css_class: dark
+            class: App\Entity\Order
+            icon:  layer-group
+            controller: App\Controller\Admin\OrderCrudController
+            link_label: "Orders list"
+            #permissions: ['ROLE_ADMIN']
+          Subscription:
+            label: "Subscriptions"
+            size: 3
+            css_class: dark
+            class: App\Entity\Subscription
+            icon:  file-invoice-dollar
+            controller: App\Controller\Admin\SubscriptionCrudController
+            link_label: "Subscriptions list"
+            #permissions: ['ROLE_ADMIN']
+          Plan:
+            label: "Plans"
+            size: 3
+            css_class: dark
+            class: App\Entity\Plan
+            icon:  book
+            controller: App\Controller\Admin\PlanCrudController
+            link_label: "Plans list"
+            #permissions: ['ROLE_ADMIN']
+
+## USER ##            
+      Bloc2:
+        label: Trajets
+        size: 12
+        css_class: primary
+        permissions: ['ROLE_USER']
+        items:
+          Report:
+            label: "My reports"
+            size: 4
+            css_class: primary text-dark
+            class: App\Entity\Report
+            icon:  road
+            controller: App\Controller\App\ReportAppCrudController
+            link_label: "Reports list"
+            query: getReportsForUser
+          ReportLine:
+            label: "My travels"
+            size: 4
+            css_class: primary text-dark
+            class: App\Entity\ReportLine
+            icon:  road
+            controller: App\Controller\App\ReportLineAppCrudController
+            link_label: "Travels list"
+            query: getLineForUser
+      Bloc3:
+        label: Paramètres
+        size: 12
+        css_class: primary
+        permissions: ['ROLE_USER']
+        items:
+          User:
+            label: "Profile"
+            size: 4
+            css_class: secondary text-dark
+            class: App\Entity\User
+            icon:  id-card
+            controller: App\Controller\App\UserAppCrudController
+            link_label: "View my profile"
+            query: dashboardQuery
+          Vehicule:
+            label: "My vehicules"
+            size: 4
+            css_class: secondary text-dark
+            class: App\Entity\Vehicule
+            icon:  car
+            controller: App\Controller\App\VehiculeAppCrudController
+            link_label: "Vehicule list"
+            query: dashboardQuery
+          UserAddress:
+            label: "My addresses"
+            size: 4
+            css_class: secondary text-dark
+            class: App\Entity\UserAddress
+            icon:  map-marker-alt
+            controller: App\Controller\App\AddressesAppCrudController
+            link_label: "UserAddress list"
+            query: dashboardQuery

@@ -1,0 +1,24 @@
+create_report: 
+  path: /account/report/new
+  controller: App\Controller\ReportController::create_report
+
+amount_generate:
+    path:     /dashboard/generate_amount
+    controller: App\Controller\App\ReportController::generateAmountAction
+    methods:  [GET, POST]  
+
+delete_report:
+  path: /account/report/{id}/delete  
+  controller : App\Controller\ReportController::deleteReport    
+
+generate_report_pdf:
+  path: /account/report/{id}/pdf  
+  controller : App\Controller\ReportController::generatePdf    
+
+btn_add_report:
+  path: /account/report/redirect
+  controller: App\Controller\ReportController::btnAddReport
+
+edit_report:
+  path: /account/report/{id}/redirect
+  controller: App\Controller\ReportController::editReport

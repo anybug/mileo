@@ -1,0 +1,19 @@
+list_vehicules:
+  path: /account/vehicules
+  controller : App\Controller\VehiculeController::indexVehicules
+
+vehicule_add:
+  path: /account/vehicule/add
+  controller : App\Controller\VehiculeController::addVehicule
+
+vehicule_edit:
+  path: /account/vehicule/{id}/edit  
+  controller : App\Controller\VehiculeController::editVehicule
+
+vehicule_delete:
+  path: /account/vehicule/{id}/delete  
+  controller : App\Controller\VehiculeController::deleteVehicule
+
+btn_add_vehicule:
+  path: /account/vehicule/redirect
+  controller : App\Controller\VehiculeController::btnAddVehicule

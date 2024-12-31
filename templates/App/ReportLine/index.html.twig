@@ -1,0 +1,103 @@
+{# DO THIS: the '!' symbol tells Symfony to extend from the original template #}
+{% extends '@!EasyAdmin/crud/index.html.twig' %}
+
+{% block filters %}
+    {% if ea.request.query.all['filters'] is defined %}
+
+        {% set applied_filters = ea.request.query.all['filters']|default([])|keys %}
+        <script>
+            $.ajax({
+                type: 'GET',
+                url: '{{ ea_url().setAction('renderFilters').includeReferrer()|raw }}',
+                data: {},
+                success: function(data){
+                    $('.ajaxFilters').html(data);
+                }
+            });
+
+            $(document).on('change', '#filters_period_value', function(e) {
+                document.getElementById("filters").submit();
+            });
+        </script>
+
+        <div class="ajaxFilters action-filters">
+
+        </div>
+    {% endif %}
+{% endblock filters %}
+
+{% block global_actions %}
+    <div class="global-actions">
+        {% for action in global_actions %}
+            {{ include(action.templatePath, { action: action }, with_context = false) }}
+        {% endfor %}
+    </div>
+{% endblock global_actions %}
+
+{% block table_footer %}
+    {% if ea.request.query.all['filters'] is defined %}
+        {% set applied_filters = ea.request.query.all()['filters'] %}
+        {% if totals is defined %}
+        <tr class="bg-secondary text-primary">
+            <th colspan="5" class="text-primary text-right">{{ 'Provision pour le mois'|trans }}</th>
+            <th>{{ totals.km }} km</th>
+            <th>{{ totals.amount|number_format(2, ',', ' ') }} {{ 'EUR'|currency_symbol }}</th>
+            
+            {% set pdfUrl = ea_url()
+                .setAction('generatePdfPerMonth')
+                .set('filters', applied_filters)
+                %}
+            <th><a class="btn btn-primary float-end" href="{{ pdfUrl|raw }}"><i class="fa fa-download"></i> {{ 'Télécharger rapport mensuel'|trans }}</a></th>
+            
+        </tr>
+        {% endif %}
+    {% endif %}
+    {% if vehiculesTotals is defined %}
+    
+        {% for vt in vehiculesTotals %}
+
+        <tr class="bg-light text-secondary">
+            <td colspan="5" class="text-right">{{ vt.Vehicule }}</td>
+            <td>{{ vt.km }} km</td>
+            <td class="text-nowrap">
+                {{ vt.amount|number_format(2, ',', ' ') }} {{ 'EUR'|currency_symbol }}
+                {% if vt.Vehicule.Scale.Amount > 0 %}
+                    <i class="fa fa-circle-info mx-2 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{'Le montant de la provision est calculé selon le barème mensualisé'|trans}}"></i> 
+                {% endif %}
+            </td>
+            <td class="text-nowrap">{{ vt.Vehicule.Scale }}</td>
+        </tr>
+
+        {% endfor %}
+    {% endif %}
+{% endblock %}
+
+{% block table_body_empty %}
+    {% for i in 1..14 %}
+        <tr class="empty-row">
+            <td><span></span></td>
+            <td><span></span></td>
+            <td><span></span></td>
+            <td><span></span></td>
+            <td><span></span></td>
+            <td><span></span></td>
+            <td><span></span></td>
+        </tr>
+
+        {% if 3 == loop.index %}
+            <tr class="no-results">
+                <td colspan="100">
+                    {% if message is defined %}
+                        {{ message }}
+                    {% else %}
+                        {{ t('datagrid.no_results', ea.i18n.translationParameters, 'EasyAdminBundle')|trans }}
+                    {% endif %}
+                </td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+{% endblock table_body_empty %}
+
+{% block paginator %}
+
+{% endblock paginator %}

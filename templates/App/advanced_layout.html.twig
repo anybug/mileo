@@ -1,0 +1,10 @@
+{% extends '@!EasyAdmin/layout.html.twig' %}
+
+{% block body_javascript %}
+    {% include 'App/javascript.html.twig' %}
+    {{ encore_entry_script_tags('newapp') }}
+{% endblock body_javascript %}
+{% block javascripts %}
+    {% include 'App/Report/index.html.twig' %}
+    {{ encore_entry_script_tags('newapp') }}
+{% endblock %}    

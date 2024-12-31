@@ -1,0 +1,40 @@
+{% set url_vehicule_change_type = ea_url()
+    .setController('App\\Controller\\App\\VehiculeAppCrudController')
+    .setAction('new') %}
+{% set url_vehicule_change_power = ea_url()
+    .setController('App\\Controller\\App\\VehiculeAppCrudController')
+    .setAction('new') %}
+{% set url_popup_fav_start = ea_url()
+    .setController('App\\Controller\\App\\ReportLineAppCrudController')
+    .setAction('new')
+    .setEntityId(null)
+    %}
+{% set url_popup_fav_lines_start = ea_url()
+    .setController('App\\Controller\\App\\ReportLineAppCrudController')
+    .setAction('new')
+    .setEntityId(null)
+    %}
+ {% set url_popup_fav_end = ea_url()
+    .setController('App\\Controller\\App\\ReportLineAppCrudController')
+    .setAction('new')
+    .setEntityId(null)
+    %}
+{% set url_popup_fav_lines_end = ea_url()
+    .setController('App\\Controller\\App\\ReportLineAppCrudController')
+    .setAction('new')
+    .setEntityId(null)
+    %}
+{% set url_generateAmountAction = ea_url()
+    .setController('App\\Controller\\App\\ReportLineAppCrudController')
+    .setAction('generateAmountAction')
+    .setEntityId(null)
+    %}
+<script>
+    const url_vehicule_change_type = '{{ url_vehicule_change_type|raw }}'
+    const url_vehicule_change_power = '{{ url_vehicule_change_power|raw }}'
+    const url_popup_fav_start = '{{ url_popup_fav_start|raw }}'
+    const url_popup_fav_lines_start = '{{ url_popup_fav_lines_start|raw }}'
+    const url_popup_fav_end = '{{ url_popup_fav_end|raw }}'
+    const url_popup_fav_lines_end = '{{ url_popup_fav_lines_end|raw }}'
+    const url_generateAmountAction = '{{ url_generateAmountAction|raw }}'
+</script>

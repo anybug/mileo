@@ -1,0 +1,33 @@
+App\Entity\Vehicule:
+  type: entity
+  repositoryClass: App\Repository\VehiculeRepository
+  id:
+    id:
+      type: integer
+      generator: { strategy: AUTO }
+  fields:
+    type:
+        type: string
+        columnDefinition: ENUM('Car', 'Cyclo')
+    model:
+        type: string
+    is_default:
+        type: boolean
+        nulleable: true
+  manyToOne:
+    user:
+      targetEntity: App\Entity\User
+      inversedBy: vehicules
+      joinColumn:
+        name: user_id
+        referencedColumnName: id
+    brand:
+      targetEntity: App\Entity\Brand
+      joinColumn:
+        name: brand_id
+        referencedColumnName: id
+    power:
+      targetEntity: App\Entity\Power
+      joinColumn:
+        name: power_id
+        referencedColumnName: id

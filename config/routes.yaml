@@ -1,0 +1,30 @@
+home:
+  path: /
+  controller: App\Controller\HomeController::index
+
+contact:
+  path: /contact
+  controller: App\Controller\ContactController::index  
+
+security_registration :
+  path: /register
+  controller: App\Controller\SecurityController::registration
+
+security_login :
+  path: /login
+  controller: App\Controller\SecurityController::login
+
+security_logout :
+  path: /logout
+  controller: App\Controller\SecurityController::logout
+
+payum_all:
+  resource: "@PayumBundle/Resources/config/routing/all.xml"
+
+forgotten_password:
+  path: /reset-password
+  controller: App\Controller\SecurityController::forgottenPassword
+
+reset_pass:
+  path: /reset-password/{token}
+  controller: App\Controller\SecurityController::resetPass  

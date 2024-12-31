@@ -1,0 +1,78 @@
+{% extends '@EasyAdminDashboard/Default/index.html.twig' %}
+{% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %}
+
+{% block head_stylesheets %}
+	{{ parent() }}
+	<link rel="stylesheet" href="{{ asset('assets/css/wizard.css') }}">
+{% endblock %}
+
+{% block main %}
+
+<p class="fs-4">
+<span><i class="fa fa-thumbs-up"></i> </span>
+Vous y êtes presque! Merci de compléter les deux dernières étapes pour pouvoir profiter de l'application.
+</p>
+
+	<ul class="steps">
+		<li class="step step-success">
+			<div class="step-content">
+				<span class="step-circle fs-3">1</span>
+				<span class="step-text fs-5">{{ "Compte"|trans }}</span>
+			</div>
+		</li>
+		<li class="step {% if step.number == 2 %}step-active{% else %}step-success{% endif %}">
+			<div class="step-content">
+				<span class="step-circle fs-3">2</span>
+				<span class="step-text fs-5">{{ "Informations"|trans }}</span>
+			</div>
+		</li>
+		<li class="step {% if step.number == 3 %}step-active{% endif %}">
+			<div class="step-content">
+				<span class="step-circle fs-3">3</span>
+				<span class="step-text fs-5">{{ "Véhicule"|trans }}</span>
+			</div>
+		</li>
+	</ul>
+
+{{ form_start(form)}}
+<div class="row">
+
+    <div class="field-form_panel">
+        <div class="form-panel">
+            <div class="form-panel-header">
+                <div class="form-panel-title row">
+                    <div class="col-9">
+                        <a href="#" class="not-collapsible">
+                            <i class="form-panel-icon fa fa-id-card"></i> {{ step.title|trans }}
+                        </a>
+                    </div>
+                    <div class="col-3 text-right">
+                        <span class="badge bg-primary text-white rounded-pill p-2 fs-5">{{ "Etape"|trans }} {{ step.number }}/3</span> 
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-panel-body">
+                {{ form_rest(form)}}
+                <div class="row mt-2">
+                    <div class="col-9">
+                    {% if step.number == 3 %}
+                        <a class="btn btn-secondary mt-2" href="{{ ea_url({ "step2": true, "menuIndex": 0, "submenuIndex": -1 }) }}"><i class="fa fa-arrow-left"></i> {{ "Retour à l'étape 2"|trans }}</a>
+                    {% endif %}    
+                    </div>    
+                    <div class="text-right col-3">
+                        <button type="submit" id="user_step{{ step.number }}_save" value="{{ "Next"|trans }}" class="btn btn-primary">
+                        {% if step.number == 3 %}{{ "Finish"|trans }}{% else %}{{ "Next"|trans }} <i class="fa fa-arrow-right"></i>{% endif %}
+                        </button>
+                    </div>
+                </div>    
+            </div>
+        </div>
+    </div>
+
+</div>
+
+	
+{{ form_end(form)}}
+
+{% endblock %}

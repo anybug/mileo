@@ -1,0 +1,107 @@
+## Admin ##
+Users: Utilisateurs
+User: Utilisateur
+Orders: Commandes
+Orders list: Liste des commandes
+Order: Commande
+Subscriptions: Abonnements
+Subscriptions list: Listes des abonnements
+Subscription: Abonnement
+Plans list: Liste des plans d'abonnement
+Management: Gestion
+ReportLine: Trajet
+Monthly reports: Rapports
+Annual reports: Rapports annuels
+Reports: Rapports
+Reports list: Liste des rapports
+My reports: Mes rapports
+Travels: trajets
+Travels list: Liste des trajets
+My travels: Mes trajets
+My vehicules: Mes véhicules
+My addresses: Mes adresses
+Period: Période
+Travel information: Parcours
+Report: Rapport
+Travel date : Date
+Vehicule : Véhicule
+Vehicules : Véhicules
+Scale: Barème
+Scales: Barèmes
+Start adress: Départ
+End adress: Arrivée
+Is return: Aller retour
+Km total: Distance (km)
+Amount: Montant
+Comment: Description
+Parameters: Paramètres
+Profile: Profil
+View my profile: Voir mon profil
+Addresses: Adresses
+Dashboard: Tableau de bord
+UserAddress: Adresse
+Please choose address: Sélectionnez une de vos adresses
+Create new monthly report: Créer un rapport mensuel
+Report list: Liste des rapports
+ReportLines list: Liste de mes trajets
+Users list: Liste des utilisateurs
+Vehicule list: Liste des véhicules
+UserAddress list: Liste des adresses
+Power: Puissance fiscale
+Estimated amount: Montant estimé
+Please select report period: Saisissez la période concernée par le rapport
+Modify: Modifier
+Totals: Totaux
+Total: Total
+Cancel: Annuler
+Confirm: Confirmer
+Duplicate travel: Dupliquer ce trajet
+Duplicate: Dupliquer
+year: année
+month: mois
+E-mail address: Adresse e-mail
+First Name: Prénom
+Last Name: Nom
+First name: Prénom
+Last name: Nom
+Password (confirmation): Confirmer mot de passe
+Balance start period: Début de période fiscale
+Balance Start Period: Début de période fiscale
+Brand: Marque
+Model: Modèle
+Finish: Terminer
+
+January: Janvier
+February : Février
+March : Mars
+April : Avril
+May : Mai
+June : Juin
+July: Juillet
+August : Aout
+September : Septembre
+October : Octobre
+November : Novembre
+December : Décembre
+
+Next: Suivant
+Previous: Précédent
+Return: Retour
+
+## front ##
+Email address: Adresse e-mail
+Password: Mot de passe
+Confirm password: Confirmation du mot de passe
+Forgot password ?: Mot de passe oublié
+Connect: Connexion
+Connect with Google: Me connecter avec Google
+Sign-up with Google: M'inscrire avec Google
+or: ou
+Email could not be found.: Adresse e-mail non reconnue
+Invalid credentials.: Mot de passe non valide
+Sign-up: Lancer l'inscription
+Company: Raison sociale
+I already have an account: J'ai déjà un compte
+My invoices: Mes factures
+Invoices: Factures
+Invoice: Facture

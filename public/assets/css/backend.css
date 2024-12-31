@@ -1,0 +1,35 @@
+.loading {
+    background-color: #ffffff;
+    background-image: url("../img/loader-gif-transparent.gif");
+    background-size: 22px 22px;
+    background-position: 7px center !important;
+    background-repeat: no-repeat;
+}
+
+.popup-fav-start, .popup-fav-end, .popup-fav-lines-start, .popup-fav-lines-end {
+    cursor: pointer;
+}
+
+.datagrid td.actions {
+    white-space: nowrap;
+}
+
+.form-group.field-collection .field-collection-copy-button {
+    position: absolute;
+    right: 44px;
+    top: 4px;
+}
+
+.form-group.field-collection .field-collection-delete-button {
+    top: 4px;
+}
+
+
+.form-group.field-collection .accordion-button, .form-group.field-collection .accordion-button:hover {
+    padding: 16px 14px;
+}
+
+.form-group.field-collection .accordion-header 
+{
+    padding-right: 88px;
+}
