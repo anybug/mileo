@@ -2,60 +2,62 @@
 
 namespace App\Controller\App;
 
-use App\Controller\App\Filter\LineDateFilter;
 use App\Entity\Brand;
+use App\Entity\Scale;
 use App\Entity\Report;
-use Doctrine\ORM\EntityRepository;
+use App\Entity\Vehicule;
+use App\Utils\ReportPdf;
+use App\Entity\ReportLine;
+use App\Form\FindByMonthType;
 use Doctrine\ORM\QueryBuilder;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use App\Controller\App\Filter\LineDateFilter;
+use Symfony\Component\HttpFoundation\Request;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Event\AfterEntityPersistedEvent;
-use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeCrudActionEvent;
-use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeEntityPersistedEvent;
-use EasyCorp\Bundle\EasyAdminBundle\Exception\ForbiddenActionException;
-use EasyCorp\Bundle\EasyAdminBundle\Exception\InsufficientEntityPermissionException;
-use EasyCorp\Bundle\EasyAdminBundle\Security\Permission;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use Symfony\Component\Form\ChoiceList\ChoiceList;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\HiddenField;
-use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
-use Symfony\Component\HttpFoundation\Request;
-use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
-use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Form\ChoiceList\ChoiceList;
-
-use App\Entity\ReportLine;
-use App\Entity\Scale;
-use App\Entity\Vehicule;
-use App\Form\FindByMonthType;
-use App\Utils\ReportPdf;
-use Doctrine\ORM\EntityManagerInterface;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\HiddenField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
+use EasyCorp\Bundle\EasyAdminBundle\Security\Permission;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
+use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
+use EasyCorp\Bundle\EasyAdminBundle\Factory\EntityFactory;
+
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Event\AfterCrudActionEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeCrudActionEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
+use EasyCorp\Bundle\EasyAdminBundle\Event\AfterEntityPersistedEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeEntityPersistedEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Exception\ForbiddenActionException;
+use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
+use EasyCorp\Bundle\EasyAdminBundle\Exception\InsufficientEntityPermissionException;
 
 class ReportLineAppCrudController extends AbstractCrudController
 {
     private $entityManager;
     private $adminUrlGenerator;
-    private $cloned = false;
+    private $cloned = null;
 
     public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator)
     {
@@ -159,44 +161,81 @@ class ReportLineAppCrudController extends AbstractCrudController
 
     public function duplicate(AdminContext $context)
     {
+
         $reportLine = $context->getEntity()->getInstance();
-        $newReportLine = clone($reportLine);
 
-        //$context->getEntity()->setInstance($cloned);
+        if (!$reportLine) {
+            $this->addFlash('error', 'Trajet non trouvé.');
+            $url = $this->adminUrlGenerator
+                ->setController(ReportLineAppCrudController::class)
+                ->setAction('index')
+                ->generateUrl()
+                ;
+           
+            return $this->redirect($url);
+        }
 
-        //return parent::edit($context);
-
-        $this->entityManager->persist($newReportLine);
-        $this->entityManager->flush();
-        
         $url = $this->adminUrlGenerator
                 ->setController(ReportLineAppCrudController::class)
-                ->setAction('edit')
-                ->setEntityId($newReportLine->getId())
+                ->setAction(Action::NEW)
+                ->setEntityId($reportLine->getId())
                 ->generateUrl()
                 ;
            
         return $this->redirect($url);
-
     }
 
     public function createEntity(string $entityFqcn)
     {
-        if($this->cloned){
-            return $this->cloned;
+        $context = $this->container->get(AdminContextProvider::class)->getContext();
+
+        if($context->getRequest()->query->get('entityId')){
+            $entityManager = $this->container->get('doctrine')->getManager();
+            $id = intval($context->getRequest()->query->get('entityId'));
+            $reportLine = $entityManager->getRepository(ReportLine::class)->find($id);
+
+            if (!$reportLine) {
+                $this->addFlash('error', 'Trajet non trouvé.');
+                $url = $this->adminUrlGenerator
+                    ->setController(ReportLineAppCrudController::class)
+                    ->setAction('index')
+                    ->generateUrl()
+                    ;
+               
+                return $this->redirect($url);
+            }
+
+            $duplicatedLine = clone $reportLine;
+            $duplicatedLine->resetId();  // Réinitialiser l'ID pour éviter un conflit
+
+            $reportLine = $duplicatedLine;
+            
+        } else {
+            $reportLine = new $entityFqcn();
+            $reportLine->setVehicule($this->getUser()->getDefaultVehicule());
+            $reportLine->setScale($this->getUser()->getDefaultVehicule()->getScale());
+            $reportLine->setTravelDate(new \DateTimeImmutable());
+
         }
 
-        $reportLine = new $entityFqcn();
-        $reportLine->setVehicule($this->getUser()->getDefaultVehicule());
-        $reportLine->setScale($this->getUser()->getDefaultVehicule()->getScale());
-        $reportLine->setTravelDate(new \DateTimeImmutable());
         return $reportLine;
+        
     }
     
     public function configureFields(string $pageName): iterable
     {
+        $entity = $this->getContext()->getEntity()->getInstance();
+        $dateFieldHtmlAttributes = [];
+        if($pageName == Crud::PAGE_EDIT && $entity->getId()){
+            $firstDayOfMonth = clone $entity->getTravelDate();
+            $firstDayOfMonth->modify('first day of this month');
+            $lastDayOfMonth = clone $entity->getTravelDate();
+            $lastDayOfMonth->modify('last day of this month');
+            $dateFieldHtmlAttributes = ['min' => $firstDayOfMonth->format('Y-m-d'), 'max' => $lastDayOfMonth->format('Y-m-d')];
+        }
+
         yield FormField::addPanel();
-        yield DateField::new('travel_date','Date')->setColumns('col-sm-6 col-lg-5 col-xxl-2')->onlyWhenCreating();
+        yield DateField::new('travel_date','Date')->setColumns('col-sm-6 col-lg-5 col-xxl-2')->setHtmlAttributes($dateFieldHtmlAttributes)->onlyOnForms();
         yield DateField::new('travel_date','Date')->onlyOnIndex();
         yield AssociationField::new('vehicule', 'Véhicule')
             ->setFormTypeOptions([

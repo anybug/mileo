@@ -18,6 +18,7 @@ $(document).ready(function () {
     $(".report_end_date ").parent().parent().parent().css("display", "none");
 
     initAutocomplete();
+    //init du date picker pour rester dans le même mois lors de la saisie d'un rapport
     dateTypeRange();
 
     $(document).on('click', '.field-collection-add-button', function () {

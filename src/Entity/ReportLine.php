@@ -280,4 +280,9 @@ class ReportLine
     {
         return "Trajet du ".$this->travel_date->format("d/m/Y")." de ". $this->km_total ." km";
     }
+
+    public function resetId()
+    {
+        $this->id = null;
+    }
 }
