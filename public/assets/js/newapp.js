@@ -130,7 +130,7 @@ $(document).ready(function () {
 
     // modal new report
 
-    $(document).on('click', '.new-report-action', function (e) {
+    /*$(document).on('click', '.new-report-action', function (e) {
         e.preventDefault();
         let $this = $(this);
         let $action = $this.attr('href');
@@ -176,7 +176,7 @@ $(document).ready(function () {
             let $btn = $('#dynamicModal').find('.btn-primary');
             $btn.attr('name', "NewReportAjax")
             $data.push({ name: $btn.attr('name'), value: $btn.val() });
-            //console.log($btn.val());
+            console.log($btn.val());
             $.ajax({
                 method: 'POST',
                 dataType: 'html',
@@ -198,7 +198,7 @@ $(document).ready(function () {
             });
         });
 
-    });
+    });*/
 
     // favories Reportline
 

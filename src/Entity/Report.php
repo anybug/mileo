@@ -291,20 +291,21 @@ class Report
         }
     }
     
-    public function getYear()
+    public function getYear(): ?\DateTimeInterface
     {
         return $this->year;
     }
+
     public function setYear(?\DateTimeInterface $year)
     {
-        $this->year = $year->format('Y');
+        $this->year = $year;
     }
     
     public function setPeriod($period)
     {
         if($this->year){
-            $this->start_date = new \DateTime("first day of ".$period." ".$this->year);
-            $this->end_date = new \DateTime("last day of ".$period." ".$this->year);
+            $this->start_date = new \DateTime("first day of ".$period." ".$this->year->format('Y'));
+            $this->end_date = new \DateTime("last day of ".$period." ".$this->year->format('Y'));
         }else{
             $this->start_date = new \DateTime("first day of ".$period." this year");
             $this->end_date = new \DateTime("last day of ".$period." this year");
@@ -400,6 +401,53 @@ class Report
         return $totalAmount;
     }
 
-    
+    public function resetId()
+    {
+        $this->id = null;
+    }
 
+
+    
+    public function synchronizeLines(): void
+    {
+        $targetYear = (int) $this->start_date->format('Y');
+        $targetMonth = (int) $this->start_date->format('m');
+
+        foreach ($this->getLines() as $line) {
+            $travelDate = $line->getTravelDate();
+
+            // Ne rien faire si déjà au bon mois/année
+            if (
+                $travelDate !== null &&
+                (int) $travelDate->format('Y') === $targetYear &&
+                (int) $travelDate->format('m') === $targetMonth
+            ) {
+                continue;
+            }
+
+            // Récupère le jour existant, ou "01" si null
+            $originalDay = $travelDate?->format('d') ?? '01';
+            $day = (int) $originalDay;
+
+            // Calcul du dernier jour valide du mois
+            $lastDayOfMonth = (int) (new \DateTimeImmutable("$targetYear-$targetMonth-01"))
+                ->modify('last day of')
+                ->format('d');
+
+            // Clamp du jour pour éviter les dates invalides
+            $safeDay = min($day, $lastDayOfMonth);
+
+            // Création de la nouvelle date
+            $newDate = \DateTime::createFromFormat('Y-m-d', sprintf(
+                '%04d-%02d-%02d',
+                $targetYear,
+                $targetMonth,
+                $safeDay
+            ));
+
+            if ($newDate !== false) {
+                $line->setTravelDate($newDate);
+            }
+        }
+    }
 }

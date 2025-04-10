@@ -46,7 +46,7 @@ class ReportLineListener
                 $report->setStartDate($startMonth);
                 $report->setEndDate($endMonth);
                 $report->setCreatedAt(new \DateTimeImmutable());
-                $em->persist($report);
+                //$em->persist($report);
             }
 
             $report->addLine($entity);

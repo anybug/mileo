@@ -1,9 +1,12 @@
+# config/packages/twig.yaml
 twig:
     default_path: '%kernel.project_dir%/templates'
-    
-    globals : 
-        gg_recaptcha_site_key: '%env(GOOGLE_RECAPTCHA_SITE_KEY)%'
-
-#    form_themes:
-#        - 'Captcha/custom_types.html.twig'    
-#        - 'layout/form.html.twig'
+    globals: ~
+    date:
+        timezone: 'Europe/Paris'
+    number_format:
+        decimal_point: ','
+        thousands_separator: ' '
+    paths: []
+    form_themes: []
+    strict_variables: false

@@ -20,7 +20,7 @@ class ReportLine
     private $id;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Report::class, inversedBy="lines")
+     * @ORM\ManyToOne(targetEntity=Report::class, inversedBy="lines", cascade={"persist"})
      */
     private $report;
 

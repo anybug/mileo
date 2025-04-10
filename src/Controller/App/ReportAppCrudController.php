@@ -2,59 +2,66 @@
 
 namespace App\Controller\App;
 
-use App\Controller\App\Filter\ReportYearFilter;
-use App\Controller\App\Filter\ReportYearFilterType;
+use FTP\Connection;
 use App\Entity\Brand;
-use App\Entity\Report;
-use App\Entity\ReportLine;
 use App\Entity\Scale;
+use App\Entity\Report;
 use App\Entity\Vehicule;
-use App\Entity\VehiculesReport;
-use App\Form\FindByYearType;
-use App\Form\ReportTotalScaleType;
-use App\Form\ReportLineType;
 use App\Utils\ReportPdf;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
+use App\Entity\ReportLine;
+use App\Form\FindByYearType;
+use App\Form\ReportLineType;
 use Doctrine\ORM\QueryBuilder;
+use App\Entity\VehiculesReport;
+use App\Form\ReportDuplicateType;
+use App\Form\ReportTotalScaleType;
+use Doctrine\ORM\EntityRepository;
+use App\Validator\Constraints\NewReport;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use App\Controller\App\Filter\ReportYearFilter;
+use Doctrine\Common\Collections\ArrayCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\BatchActionDto;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
-use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-use Symfony\Component\HttpFoundation\Request;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
-use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
+use App\Controller\App\Filter\ReportYearFilterType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
-use FTP\Connection;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\Form\Test\FormBuilderInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\BatchActionDto;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
+use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
+use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
 
 class ReportAppCrudController extends AbstractCrudController
 {
@@ -116,9 +123,12 @@ class ReportAppCrudController extends AbstractCrudController
 
     public function createEntity(string $entityFqcn)
     {
-        $entity = new $entityFqcn();
-        $entity->setUser($this->getUser());
-        return $entity;
+        $context = $this->container->get(AdminContextProvider::class)->getContext();
+        
+        $report = new $entityFqcn();
+        $report->setUser($this->getUser());
+        
+        return $report;
     }
     
     public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
@@ -139,7 +149,7 @@ class ReportAppCrudController extends AbstractCrudController
         ->setDefaultSort(['start_date' => 'ASC'])
         ->setPageTitle('index', 'Reports')
         ->setPageTitle('edit', fn (Report $report) => sprintf('Modifier le rapport de %s', $report->getPeriod()))
-        ->setPageTitle('new', 'Please select report period')
+        ->setPageTitle('new', 'New report period')
         ->setFormOptions(['validation_groups' => ['new','default']], ['validation_groups' => ['default','edit']])
         ->overrideTemplate('crud/index', 'App/Report/index.html.twig')
         ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
@@ -159,6 +169,12 @@ class ReportAppCrudController extends AbstractCrudController
             //->setCssClass('btn btn-primary')
             ->linkToCrudAction('generatePdf');
 
+        $duplicateAction = Action::new('duplicate', 'Duplicate')
+            ->linkToCrudAction('duplicateReport')
+            ->setIcon("fa fa-copy")
+            ->setCssClass("duplicate-report-action")
+            ;    
+
         return $actions
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_ADD_ANOTHER)
@@ -169,6 +185,7 @@ class ReportAppCrudController extends AbstractCrudController
             ->update(Crud::PAGE_INDEX, Action::NEW, function (Action $action) {
                 return $action->setCssClass('btn btn-primary new-report-action');
             })
+            ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_INDEX, $generatePdf)
             ;
     }
@@ -178,7 +195,18 @@ class ReportAppCrudController extends AbstractCrudController
         $report = $context->getEntity()->getInstance();
         $pdf = new ReportPdf();
         $period = [$report->getStartDate()->format('F'),$report->getStartDate()->format('Y')];
-        return $pdf->generatePdf([$report],$period,'month');
+
+        $pdfContent = $pdf->generatePdf([$report],$period,'month');
+
+        $response = new Response($pdfContent);
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set('Content-Disposition', 'attachment; filename="'.$pdf->generateFilename().'"');
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
+
     }
     
     public function generatePdfPerYear(AdminContext $context)
@@ -188,40 +216,61 @@ class ReportAppCrudController extends AbstractCrudController
         $period = explode(" -> ",$period);
         $reports = $this->entityManager->getRepository(Report::class)->findByPeriod($period[0],$period[1]);
         $pdf = new ReportPdf();
-        return $pdf->generatePdf($reports,$period,'year');
+        $pdfContent = $pdf->generatePdf($reports,$period,'year');
+
+        $response = new Response($pdfContent);
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set('Content-Disposition', 'attachment; filename="'.$pdf->generateFilename().'"');
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
     }
 
     public function configureFields(string $pageName): iterable
     {
+        $context = $this->container->get(AdminContextProvider::class)->getContext();
+        
         yield FormField::addRow();
         yield DateField::new('start_date','Period')
         ->onlyOnIndex()
         ->setFormat('MMMM y')
         ;
         
-        yield DateField::new('start_date','Date de début')->setFormTypeOptions(['attr' => ['class' => 'report_start_date']])->onlyOnForms()->hideWhenCreating();
-        
-        yield DateField::new('end_date','Date de fin')->setFormTypeOptions(['attr' => ['class' => 'report_end_date']])->onlyOnForms()->hideWhenCreating();
-        //yield DateField::new('validate_date','Date de validation');
-        yield DateField::new('Year','Année')->renderAsChoice()->onlyOnForms()->hideWhenUpdating()->setFormTypeOptions(["required" => true,'years' => range(date('Y')-4, date('Y')+1),]);
-        yield ChoiceField::new('Period','Mois')->setChoices(function (){
-            return ['Janvier' => 'January','Février' => 'February','Mars' => 'March','Avril' => 'April','Mai' => "May",'Juin' => 'June','Juillet' => 'July','Août' => 'August','Septembre' => 'September','Octobre' => "October",'Novembre' => 'November','Décembre' => "December"];
-        })->onlyOnForms()->hideWhenUpdating()->setFormTypeOptions(["required" => true]);
-        yield CollectionField::new('lines','Trajet')
-            ->setEntryType(ReportLineType::class)
-            ->allowDelete(true)
-            ->hideWhenCreating()
-            ->setFormTypeOptions(["attr" => ["class" => "lines"]])
-            ->hideOnIndex();
-        yield CollectionField::new('lines', 'Trajet(s)')->setTemplatePath('App/Report/lines.html.twig')->OnlyOnIndex();       
-        //yield CollectionField::new('vehiculesReports', 'Details')->setTemplatePath('App/Report/vehiculesReports.html.twig')->OnlyOnIndex();  
-        
+        if($pageName == CRUD::PAGE_EDIT){
+            yield DateField::new('start_date','Date de début')->setFormTypeOptions(['attr' => ['class' => 'report_start_date']])->onlyOnForms()->hideWhenCreating();
+            yield DateField::new('end_date','Date de fin')->setFormTypeOptions(['attr' => ['class' => 'report_end_date']])->onlyOnForms()->hideWhenCreating();
+            yield CollectionField::new('lines','Trajet(s)')
+                ->setEntryType(ReportLineType::class)
+                ->allowDelete(true)
+                ->hideWhenCreating()
+                ->setFormTypeOptions(["attr" => ["class" => "lines"]])
+                ->hideOnIndex()
+            ;
+        }
+
+        if($pageName == CRUD::PAGE_NEW){
+            //yield DateField::new('validate_date','Date de validation');
+            yield DateField::new('Year','Année')->renderAsChoice()->onlyOnForms()->hideWhenUpdating()->setFormTypeOptions(["required" => true,'years' => range(date('Y')-4, date('Y')+1),]);
+            yield ChoiceField::new('Period','Mois')->setChoices(function (){
+                return ['Janvier' => 'January','Février' => 'February','Mars' => 'March','Avril' => 'April','Mai' => "May",'Juin' => 'June','Juillet' => 'July','Août' => 'August','Septembre' => 'September','Octobre' => "October",'Novembre' => 'November','Décembre' => "December"];
+            })->onlyOnForms()->hideWhenUpdating()->setFormTypeOptions(["required" => true]);
+        }
+
+        if($pageName == CRUD::PAGE_INDEX){
+            yield CollectionField::new('lines', 'Trajet(s)')->setTemplatePath('App/Report/lines.html.twig')->OnlyOnIndex();       
+            //yield CollectionField::new('vehiculesReports', 'Details')->setTemplatePath('App/Report/vehiculesReports.html.twig')->OnlyOnIndex();
+        }    
+  
         yield FormField::addRow();
         yield IntegerField::new('km','Distance totale (km)')
             ->setFormTypeOptions(["attr" => ["readonly" => true,"class" => "km bg-light fw-bold"]])
             ->hideWhenCreating()
             ->hideOnIndex()
             ->setColumns('col-3');
+
+
         yield IntegerField::new('km','Distance')
             ->setNumberFormat('%s'.' km')
             ->onlyOnIndex()
@@ -234,6 +283,7 @@ class ReportAppCrudController extends AbstractCrudController
             ->hideOnIndex()
             ->setNumberFormat('%s'.' €')
             ;
+            
         yield NumberField::new('total','Montant')
             ->setNumberFormat('%s'.' €')    
             ->onlyOnIndex()
@@ -248,6 +298,82 @@ class ReportAppCrudController extends AbstractCrudController
         ;
     }
 
+    public function duplicateReport(
+        AdminContext $context,
+        Request $request,
+        EntityManagerInterface $em,
+        FormFactoryInterface $formFactory,
+        AdminUrlGenerator $adminUrlGenerator,
+        ValidatorInterface $validator
+    ): Response {
+        /** @var Report $original */
+        $original = $context->getEntity()->getInstance();
+    
+        $form = $formFactory->create(ReportDuplicateType::class);
+        $form->handleRequest($request);
+    
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
+            $year = $data['year'];
+            $month = $data['month'];
+    
+            $startDate = new \DateTimeImmutable("$year-$month-01");
+            $endDate = $startDate->modify('last day of this month');
+    
+            $newReport = new Report();
+            $newReport->setStartDate($startDate);
+            $newReport->setEndDate($endDate);
+            $newReport->setUser($original->getUser());
+
+            // Valider le rapport avant persist
+            $errors = $validator->validate($newReport, new NewReport());
+
+            if (count($errors) > 0) {
+                return $this->render('App/Report/duplicate_form.html.twig', [
+                    'form' => $form->createView(),
+                    'original' => $original,
+                    'errors' => $errors,
+                ]);
+            }
+
+            $em->persist($newReport);
+            $em->flush();
+    
+            foreach ($original->getLines() as $line) {
+                $newLine = new ReportLine();
+                $newLine->setKm($line->getKm());
+                $newLine->setIsReturn($line->getIsReturn());
+                $newLine->setKmTotal($line->getKmTotal());
+                $newLine->setAmount($line->getAmount());
+                $newLine->setStartAdress($line->getStartAdress());
+                $newLine->setEndAdress($line->getEndAdress());
+                $newLine->setComment($line->getComment());
+                $newLine->setVehicule($line->getVehicule());
+                $newLine->setScale($line->getScale());
+    
+                $adjustedDate = $line->getTravelDate()
+                    ->setDate($year, $month, min($line->getTravelDate()->format('d'), $endDate->format('d')));
+                $newLine->setTravelDate($adjustedDate);
+    
+                $newLine->setReport($newReport);
+                $em->persist($newLine);
+                $em->flush();
+            }
+    
+            $url = $adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::EDIT)
+                ->setEntityId($newReport->getId())
+                ->generateUrl();
+    
+            return $this->redirect($url);
+        }
+    
+        return $this->render('App/Report/duplicate_form.html.twig', [
+            'form' => $form->createView(),
+            'original' => $original,
+        ]);
+    }
 
     public function getRedirectResponseAfterSave(AdminContext $context, string $action): RedirectResponse
     {
@@ -258,7 +384,7 @@ class ReportAppCrudController extends AbstractCrudController
         }else{
             $context->getRequest()->setMethod('PATCH');
     
-            $url = $this->container->get(AdminUrlGenerator::class)
+            $url = $this->adminUrlGenerator
                 ->setAction(Action::EDIT)
                 ->setEntityId($context->getEntity()->getPrimaryKeyValue())
                 ->generateUrl();

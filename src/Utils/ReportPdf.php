@@ -8,6 +8,9 @@
 
 namespace App\Utils;
 use \TCPDF;
+use \IntlDateFormatter;
+use \DateTime;
+use \DateTimeZone;
 
 class ReportPdf extends TCPDF
 {
@@ -24,6 +27,46 @@ class ReportPdf extends TCPDF
     private function getReports()
     {
         return $this->reports;
+    }
+
+    public function generateFilename()
+    {
+        $reports = $this->getReports();
+        $entity = $reports[0];
+        //format par année ou par mois
+        if($this->type == 'year'){
+            $fromArray = explode(' ',$this->period[0]); // mois année
+            $toArray = explode(' ',$this->period[1]); // mois année
+
+            $from = $this->translateMonth($fromArray[0]) . '_' . $this->translateMonth($toArray[0]); //mois
+            $to = $toArray[1]; //année
+        }else{
+            $from = $this->translateMonth($this->period[0]); //mois
+            $to = $this->period[1]; //année
+        }
+        $filename = 'Fiche_kilometrique_' . $entity->getUser() . '_' . $from. '_' . $to . '.pdf';
+
+        return $filename;
+    }
+
+    public function translateMonth(string $month): string
+    {
+        $date = DateTime::createFromFormat('F', $month, new DateTimeZone('UTC'));
+
+        if (!$date) {
+            throw new \InvalidArgumentException("Mois invalide : $month");
+        }
+
+        $formatter = new IntlDateFormatter(
+            'fr_FR',
+            IntlDateFormatter::NONE,
+            IntlDateFormatter::NONE,
+            'UTC',
+            null,
+            'MMMM'
+        );
+
+        return $formatter->format($date);
     }
 
     public function Header() 
@@ -113,7 +156,7 @@ class ReportPdf extends TCPDF
         $this->vehiculesTotals = $vehiculesTotals;
         $this->setReports($reports);
         $this->period = $period;
-        $entity = $reports[0];
+        
         $pdf = $this;
         //$this->setTitle($title);
 
@@ -192,9 +235,10 @@ class ReportPdf extends TCPDF
         $table_footer .= '</table>';
                 
         $pdf->writeHTML($table_style.$table_header.$table_body.$table_footer, true, false, true, false, '');
-                
-        $filename = 'Fiche_kilometrique_' . $entity->getUser() . '_' . $this->period[0]. '_' . $this->period[1] . '.pdf';
-        $pdf->Output($filename, 'D');
+
+        $pdfContent = $pdf->Output($this->generateFilename(), 'S');
+ 
+        return $pdfContent;
 
     }
 

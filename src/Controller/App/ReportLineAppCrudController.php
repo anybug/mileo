@@ -38,7 +38,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Security\Permission;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Factory\EntityFactory;
-
+use Symfony\Component\HttpFoundation\Response;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
@@ -144,8 +144,8 @@ class ReportLineAppCrudController extends AbstractCrudController
     {
         $actions = parent::configureActions($actions);
 
-        $duplicate = Action::new('duplicate', 'Duplicate')
-            ->linkToCrudAction('duplicate')
+        $duplicateAction = Action::new('duplicate', 'Duplicate')
+            ->linkToCrudAction('duplicateLine')
             ->setIcon("fa fa-copy")
             ;
 
@@ -154,34 +154,21 @@ class ReportLineAppCrudController extends AbstractCrudController
         }
 
         return $actions
-            ->add(Crud::PAGE_INDEX, $duplicate)
+            ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_EDIT, Action::DELETE)
             ;
     }
 
-    public function duplicate(AdminContext $context)
+    public function duplicateLine(AdminContext $context)
     {
-
         $reportLine = $context->getEntity()->getInstance();
-
-        if (!$reportLine) {
-            $this->addFlash('error', 'Trajet non trouvé.');
-            $url = $this->adminUrlGenerator
-                ->setController(ReportLineAppCrudController::class)
-                ->setAction('index')
-                ->generateUrl()
-                ;
-           
-            return $this->redirect($url);
-        }
-
+        
         $url = $this->adminUrlGenerator
-                ->setController(ReportLineAppCrudController::class)
-                ->setAction(Action::NEW)
-                ->setEntityId($reportLine->getId())
-                ->generateUrl()
-                ;
-           
+            ->setController(self::class)
+            ->setAction(Action::NEW)
+            ->set('sourceId', $reportLine->getId())
+            ->generateUrl();
+
         return $this->redirect($url);
     }
 
@@ -189,9 +176,9 @@ class ReportLineAppCrudController extends AbstractCrudController
     {
         $context = $this->container->get(AdminContextProvider::class)->getContext();
 
-        if($context->getRequest()->query->get('entityId')){
+        if($context->getRequest()->query->get('sourceId')){
             $entityManager = $this->container->get('doctrine')->getManager();
-            $id = intval($context->getRequest()->query->get('entityId'));
+            $id = intval($context->getRequest()->query->get('sourceId'));
             $reportLine = $entityManager->getRepository(ReportLine::class)->find($id);
 
             if (!$reportLine) {
@@ -403,7 +390,16 @@ class ReportLineAppCrudController extends AbstractCrudController
         $year = $period[1];
         $report = $this->entityManager->getRepository(Report::class)->findByYearAndMonth($year,$month);
         $pdf = new ReportPdf();
-        $pdf->generatePdf([$report],$period,'month');
+        $pdfContent = $pdf->generatePdf([$report],$period,'month');
+
+        $response = new Response($pdfContent);
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set('Content-Disposition', 'attachment; filename="'.$pdf->generateFilename().'"');
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
     }
 
     public function generateFooterLine(KeyValueStore $responseParameters, AdminContext $context) 

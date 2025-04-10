@@ -1,0 +1,31 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %}
+
+{% block content_title %}
+    {% set url_back = ea_url()
+        .setAction('index')
+    %}
+    <a href="{{ url_back }}" class="btn btn-secondary ms-2"><i class="fa-solid fa-arrow-left"></i> {{ "Annuler"|trans }}</a>
+    {{ parent() }}
+{% endblock %}
+
+{% block main %}
+    <h1>Dupliquer le rapport de {{ original.startDate|date('F')|trans }} {{ original.startDate|date('Y')|trans }}</h1>
+    <h3 class="alert alert-primary" role="alert"><i class="fa-solid fa-circle-info"></i> Sélection de la période du nouveau rapport</h3>
+    <p class="alert alert-primary" role="alert">Le mois de chaque trajet sera automatiquement attribué au mois sélectionné, vous n'aurez plus qu'à vérifier le jour et ajuster si besoin <i class="far fa-smile-wink"></i></p>
+{% if errors is defined and errors|length > 0 %}
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            {% for error in errors %}
+                <li>{{ error.message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+    {{ form_start(form) }}
+        {{ form_row(form.year) }}
+        {{ form_row(form.month) }}
+        {{ form_row(form.submit) }}
+    {{ form_end(form) }}
+{% endblock %}

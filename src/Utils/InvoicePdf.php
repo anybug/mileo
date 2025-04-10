@@ -138,7 +138,10 @@ class InvoicePdf extends TCPDF
         $pdf->writeHTML($table_header.$table_body.$table_footer, true, false, true, false, '');
                 
         $filename = 'Mileo_Facture_'.$entity->getInvoice()->getNum().'.pdf';
-        $pdf->Output($filename, 'D');
+
+        $pdfContent = $pdf->Output($filename, 'S');
+ 
+        return $pdfContent;
 
     }
 
