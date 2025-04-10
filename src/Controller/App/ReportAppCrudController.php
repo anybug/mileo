@@ -153,7 +153,7 @@ class ReportAppCrudController extends AbstractCrudController
         ->setFormOptions(['validation_groups' => ['new','default']], ['validation_groups' => ['default','edit']])
         ->overrideTemplate('crud/index', 'App/Report/index.html.twig')
         ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
-        //->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
+        ->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
         ->overrideTemplate('crud/filters', 'App/Report/filters.html.twig')
         ->addFormTheme('App/Report/form_theme.html.twig')
         ;
