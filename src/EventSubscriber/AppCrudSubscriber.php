@@ -35,7 +35,7 @@ class AppCrudSubscriber implements EventSubscriberInterface
         ];
     }
 
-    public function redirectToIndex($event)
+    public function redirectToIndex(BeforeCrudActionEvent $event): void
     {
         $context = $event->getAdminContext();
         $entityFqcn = $context->getEntity()->getFqcn();
@@ -65,14 +65,14 @@ class AppCrudSubscriber implements EventSubscriberInterface
         }
 
         if ($entity instanceof Report) {
-            if($context->getRequest()->query->get("filters") == null){
+            if(!$context->getRequest()->query->has("filters")){
 
                 $report = $this->entityManager->getRepository(Report::class)->getLastReportForUser();
                 $now = new \DateTime();
                 if($report) {
                     $period = $this->security->getUser()->generateBalancePeriodByReport($report);
                 }else{
-                    $period = $this->security->getUser()->guessBalancePeriodByYear($now->format('Y'));
+                    $period = $this->security->getUser()->getCurrentFiscalPeriod();
                 }
                 
                 $choice = $this->security->getUser()->getFormattedBalancePeriod($period);

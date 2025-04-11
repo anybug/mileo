@@ -468,82 +468,61 @@ class User implements UserInterface
 
     public function getBalanceEndPeriod(): ?string
     {
-        $start = new \DateTime("first day of ".$this->getBalanceStartPeriod());
+        $start = new \DateTime('first day of ' . $this->getBalanceStartPeriod() . ' 2000'); //astuce antibug: 2000 est une année bissextile
         $start->modify('+11 month');
-        //dd($start);
         $end = $start->format('F');
 
         return $end;
     }
 
-    public function generateBalancePeriodByReport($report)
+    public function generateBalancePeriodByReport(Report $report): array
     {
-        $startDate = $report->getStartDate();
-        //$endDate = $report->getEndDate();
-
-        $startDay = new \DateTime("first day of ".$this->getBalanceStartPeriod());
-        $endDay = new \DateTime("last day of ".$this->getBalanceEndPeriod());
-        $startMonth = $startDate->format('F');
-
-        if(new \DateTime($startMonth) >= new \DateTime($this->getBalanceStartPeriod())){
-            $startPeriodString = $startDay->format('d').'/'.$this->getBalanceStartPeriod().'/'.$report->getStartDate()->format('Y');
-            $balancePeriodStart = \DateTime::createFromFormat('d/F/Y', $startPeriodString);
-            $balancePeriodEnd = clone $balancePeriodStart;
-            $balancePeriodEnd->modify('+365 day');
-        }else{
-            $endPeriodString = $endDay->format('d').'/'.$this->getBalanceEndPeriod().'/'.$report->getStartDate()->format('Y');
-            $balancePeriodEnd = \DateTime::createFromFormat('d/F/Y', $endPeriodString);
-            $balancePeriodStart = clone $balancePeriodEnd;
-            $balancePeriodStart->modify('-365 day');
+        $startMonth = $this->getBalanceStartPeriod(); // ex: 'October'
+        $reportDate = $report->getStartDate(); // DateTimeImmutable
+    
+        // Créer une date de début de période fiscale basée sur le mois de départ
+        $fiscalStart = new \DateTimeImmutable('first day of ' . $startMonth . ' ' . $reportDate->format('Y'));
+    
+        // Si la date du rapport est antérieure à la date de début de la période fiscale, reculer d'un an
+        if ($reportDate < $fiscalStart) {
+            $fiscalStart = $fiscalStart->modify('-1 year');
         }
-
-        $period = [
-            'startMonth' => $balancePeriodStart->format('F'),
-            'prevYear' => $balancePeriodStart->format('Y'),
-            'endMonth' => $balancePeriodEnd->format('F'),
-            'nextYear' => $balancePeriodEnd->format('Y'),
+    
+        // Définir la date de fin de la période fiscale (11 mois après le début)
+        $fiscalEnd = $fiscalStart->modify('+11 months')->modify('last day of this month');
+    
+        return [
+            'start' => $fiscalStart,
+            'end' => $fiscalEnd,
         ];
-
-        return $period;
-
     }
 
-    public function guessBalancePeriodByYear($year = false)
+    public function getCurrentFiscalPeriod(): ?array
     {
-        $now = new \DateTime;
-        $startMonth = $this->getBalanceStartPeriod();
-        $endMonth = $this->getBalanceEndPeriod();
-
-        if(!$year){
-            $year = $now->format('Y');
+        $startMonth = $this->getBalanceStartPeriod(); // ex: "October"
+        $now = new \DateTimeImmutable(); // Date actuelle
+    
+        // Construire la date de début de la période fiscale potentielle
+        $fiscalStart = new \DateTimeImmutable('first day of ' . $startMonth . ' ' . $now->format('Y'));
+    
+        // Si on est avant le début de la période fiscale, alors on est encore dans la période précédente
+        if ($now < $fiscalStart) {
+            $fiscalStart = $fiscalStart->modify('-1 year');
         }
-        $prevYear = $nextYear = $year;
-
-        if($this->getBalanceStartPeriod() != 'January'){
-
-            $start = new \DateTime("first day of ".$startMonth);
-            //$end = new \DateTime("last day of ".$endMonth);
-
-            if($now < $start){
-                $prevYear = $year-1;
-            }else{
-                $nextYear = $year+1;
-            }
-
-        }
-        
+    
+        $fiscalEnd = $fiscalStart->modify('+11 months')->modify('last day of this month');
+    
         return [
-            'startMonth' => $startMonth,
-            'prevYear' => $prevYear,
-            'endMonth' => $endMonth,
-            'nextYear' => $nextYear
+            'start' => $fiscalStart,
+            'end' => $fiscalEnd,
         ];
     }
 
     public function getFormattedBalancePeriod($period = array())
     {
         if($period){
-            $value = $period['startMonth'] ." ".$period['prevYear']." -> ".$period['endMonth']." ".$period['nextYear'];
+            //$value = $period['startMonth'] ." ".$period['prevYear']." -> ".$period['endMonth']." ".$period['nextYear'];
+            $value = $period['start']->format('M') ." ".$period['start']->format('Y')." -> ".$period['end']->format('M')." ".$period['end']->format('Y');
             return $value;
         }
         
@@ -562,16 +541,45 @@ class User implements UserInterface
                 'LLLL'
             );
 
-            $startMonthFr = ucfirst($fmt->format(new \DateTime("first day of ".$period['startMonth'])));
-            $lastMonthFr = ucfirst($fmt->format(new \DateTime("last day of ".$period['endMonth'])));
+            $startMonthFr = ucfirst($fmt->format(new \DateTime("first day of ".$period['start']->format('M'))));
+            $lastMonthFr = ucfirst($fmt->format(new \DateTime("last day of ".$period['end']->format('M'))));
 
-            $value = $startMonthFr ." ".$period['prevYear']." -> ".$lastMonthFr." ".$period['nextYear'];
+            $value = $startMonthFr ." ".$period['start']->format('Y')." -> ".$lastMonthFr." ".$period['end']->format('Y');
 
             return $value;
         }
 
         return false;
     }
+
+    /*public function getBalancePeriodFilterKeyFromReport(?Report $report): ?string
+    {
+        $period = $this->generateBalancePeriodByReport($report) ?? $this->getCurrentFiscalPeriod();
+
+        if (!$period) {
+            return null;
+        }
+
+        // Exemple: '2023-10'
+        return $period['start']->format('Y-m');
+    }
+
+    public function formatFiscalPeriodLabelFromKey(string $key): string
+    {
+        // $key = 'YYYY-MM'
+        $fiscalStart = \DateTimeImmutable::createFromFormat('Y-m-d', $key . '-01');
+
+        $fiscalEnd = $fiscalStart->modify('+11 months')->modify('last day of this month');
+
+        return sprintf(
+            '%s %d → %s %d',
+            $fiscalStart->format('F'),
+            $fiscalStart->format('Y'),
+            $fiscalEnd->format('F'),
+            $fiscalEnd->format('Y')
+        );
+    }*/
+
 
     public function hasCompletedStep2()
     {

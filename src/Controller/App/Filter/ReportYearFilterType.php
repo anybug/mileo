@@ -45,17 +45,17 @@ class ReportYearFilterType extends AbstractType
 
         $reports = $this->entityManager->getRepository(Report::class)->getReportsForUser();
         $choices = [];
-        $year = false;
+        $user = $this->security->getUser();
 
         foreach ($reports as $report) {
-            $period = $this->security->getUser()->generateBalancePeriodByReport($report);
-            $choices[$this->security->getUser()->getTranslattedBalancePeriod($period)] = $this->security->getUser()->getFormattedBalancePeriod($period);
+            $period = $user->generateBalancePeriodByReport($report);
+            $choices[$user->getTranslattedBalancePeriod($period)] = $user->getFormattedBalancePeriod($period);
 
         }
 
         if(count($choices) == 0){
-            $period = $this->security->getUser()->guessBalancePeriodByYear($year);
-            $choices[$this->security->getUser()->getTranslattedBalancePeriod($period)] = $this->security->getUser()->getFormattedBalancePeriod($period);
+            $period = $user->getCurrentFiscalPeriod();
+            $choices[$user->getTranslattedBalancePeriod($period)] = $user->getFormattedBalancePeriod($period);
         }
 
         return $choices;
