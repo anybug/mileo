@@ -60,6 +60,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
 
@@ -188,6 +189,18 @@ class ReportAppCrudController extends AbstractCrudController
             ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_INDEX, $generatePdf)
             ;
+    }
+
+    public function edit(AdminContext $context)
+    {
+        $report = $context->getEntity()->getInstance();
+        $currentUser = $this->getUser();
+
+        if ($report->getUser() !== $currentUser) {
+            throw new AccessDeniedHttpException();
+        }
+
+        return parent::edit($context);
     }
 
     public function generatePdf(AdminContext $context)

@@ -42,7 +42,7 @@ class AppCrudSubscriber implements EventSubscriberInterface
         $entity = new $entityFqcn();
 
         if ($entity instanceof ReportLine) {
-            if($context->getRequest()->query->get("filters") == null){
+            if(!$context->getRequest()->query->has("filters")){
                 
                 $reportline = $this->entityManager->getRepository(ReportLine::class)->getLastLineForUser();
                 if ($reportline) {

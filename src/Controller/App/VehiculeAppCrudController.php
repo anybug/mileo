@@ -2,6 +2,7 @@
 
 namespace App\Controller\App;
 
+use Error;
 use App\Entity\Power;
 use App\Entity\Scale;
 use App\Entity\Vehicule;
@@ -22,11 +23,11 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
+
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
-
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
@@ -35,9 +36,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
-use Error;
 
 class VehiculeAppCrudController extends AbstractCrudController
 {
@@ -128,6 +129,18 @@ class VehiculeAppCrudController extends AbstractCrudController
         $vehicule = new $entityFqcn;
         $vehicule->setUser($this->getUser());
         return $vehicule;
+    }
+
+    public function edit(AdminContext $context)
+    {
+        $vehicule = $context->getEntity()->getInstance();
+        $currentUser = $this->getUser();
+
+        if ($vehicule->getUser() !== $currentUser) {
+            throw new AccessDeniedHttpException();
+        }
+
+        return parent::edit($context);
     }
 
     public function createNewForm(EntityDto $entityDto, KeyValueStore $formOptions, AdminContext $context): FormInterface
