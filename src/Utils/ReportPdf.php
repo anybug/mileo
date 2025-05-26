@@ -194,7 +194,10 @@ class ReportPdf extends TCPDF
         $table_body = '<tbody>';
         foreach ($linesPerVehicule as $key=>$vehicule) {
             $table_body .= '<tr><td colspan="7" height="6"></td></tr>';
-            $table_body .= '<tr><td colspan="7" class="subtitle">'.$key.' ('.$vehicule[array_key_first($vehicule)]->getVehicule()->getPower().')</td></tr>';
+            $table_body .= '<tr><td colspan="7" class="subtitle">';
+            $table_body .= $key.' ('.$vehicule[array_key_first($vehicule)]->getVehicule()->getPower().')';
+            $table_body .= $vehicule[array_key_first($vehicule)]->getVehicule()->getKilometres() ? ' - '.$vehicule[array_key_first($vehicule)]->getVehicule()->getKilometres().'km' : '';
+            $table_body .= '</td></tr>';
             foreach($vehicule as $line){
                 $is_return = $line->getIsReturn() ? '<img height="12" src="assets/img/icons/validated_pdf.png">' : '<img height="12" src="assets/img/icons/unvalidated_pdf.png">';
                 $table_body .= '<tr>';

@@ -38,6 +38,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
 
 class VehiculeAppCrudController extends AbstractCrudController
@@ -111,6 +112,8 @@ class VehiculeAppCrudController extends AbstractCrudController
         yield TextField::new('scale', 'Barème : estimation de la distance annuelle parcourue')->hideOnForm();    
         yield Field::new('hasLatestScale', 'Barème à jour')->onlyOnIndex()->setTemplatePath('App/Fields/boolean.html.twig');  
         
+        yield IntegerField::new('kilometres', 'Kilométrage')->setHelp("Facultatif: indiquez ici le kilométrage du véhicule si vous souhaitez qu'il apparaisse sur les rapports.")->hideOnIndex();
+
         if(Crud::PAGE_EDIT == $pageName){
             yield BooleanField::new('is_default','Définir comme véhicule par défaut')->onlyOnForms()->setHelp("Vous ne pouvez pas supprimer un véhicule s'il est défini par défaut ou s'il a déjà été utilisé dans des rapports.");
         }elseif(Crud::PAGE_NEW == $pageName){
@@ -121,6 +124,8 @@ class VehiculeAppCrudController extends AbstractCrudController
             ->hideOnForm()
             ;
         }
+
+        
         
     }
 

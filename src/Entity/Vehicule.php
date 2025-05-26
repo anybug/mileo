@@ -66,6 +66,11 @@ class Vehicule
      */
     private $reportlines;
 
+    /**
+     * @ORM\Column(type="integer", nullable=true)
+     */
+    private $kilometres;
+
     const TYPE_CAR = 'Car';
     const TYPE_CYCLO = 'Cyclo';
     
@@ -238,6 +243,18 @@ class Vehicule
         $latest_year = array_key_last($years);
 
         return $year == $latest_year ? true : false;
+    }
+
+    public function getKilometres(): ?int
+    {
+        return $this->kilometres;
+    }
+
+    public function setKilometres(?int $kilometres): static
+    {
+        $this->kilometres = $kilometres;
+
+        return $this;
     }
 
 }
