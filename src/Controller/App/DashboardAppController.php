@@ -2,43 +2,44 @@
 
 namespace App\Controller\App;
 
-use App\Controller\Admin\VehiculeCrudController;
-use App\Entity\Order;
 use App\Entity\Plan;
+use App\Entity\User;
+use App\Entity\Order;
+use App\Entity\Power;
 use App\Entity\Scale;
 use App\Entity\Report;
-use App\Entity\ReportLine;
-use App\Entity\Subscription;
-use App\Entity\User;
-use App\Entity\UserAddress;
 use App\Entity\Vehicule;
-use App\Entity\Power;
+use App\Entity\ReportLine;
+use App\Entity\UserAddress;
 use App\Form\UserStep2Type;
 use App\Form\UserStep3Type;
+use App\Entity\Subscription;
+use Symfony\UX\Chartjs\Model\Chart;
 use Doctrine\ORM\EntityManagerInterface;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
-use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use App\Controller\Admin\UserCrudController;
+use Symfony\Component\Form\Test\FormInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
-use EasyCorp\Bundle\EasyAdminBundle\Config\UserMenu;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Form\FormFactoryInterface;
-use EasyAdminFriends\EasyAdminDashboardBundle\Controller\DefaultController as EasyAdminDashboard;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
-use EasyCorp\Bundle\EasyAdminBundle\Factory\FormFactory;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Test\FormBuilderInterface;
-use Symfony\Component\Form\Test\FormInterface;
-use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
-use Symfony\UX\Chartjs\Model\Chart;
+use App\Controller\Admin\VehiculeCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use Symfony\Component\Form\FormFactoryInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
+use EasyCorp\Bundle\EasyAdminBundle\Config\UserMenu;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
+use Symfony\Component\Form\Test\FormBuilderInterface;
+use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use Symfony\Component\Security\Core\User\UserInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Factory\FormFactory;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
+use EasyAdminFriends\EasyAdminDashboardBundle\Controller\DefaultController as EasyAdminDashboard;
 
 
 class DashboardAppController extends AbstractDashboardController
@@ -306,7 +307,7 @@ class DashboardAppController extends AbstractDashboardController
             //->setQueryParameter('filters[Period][value]', $date->format('Y'));
 
         yield MenuItem::section('Parameters');
-        yield MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class);
+        yield MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class)->setController(UserAppCrudController::class);
         yield MenuItem::linkToCrud('My vehicules', 'fa fa-car', Vehicule::class);
         yield MenuItem::linkToCrud('My addresses', 'fa fa-map-marker-alt', UserAddress::class);
         yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class);

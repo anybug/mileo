@@ -51,6 +51,10 @@ class OrderListener
         ->context([
             'order' => $entity,
         ]);
+
+        if($_ENV['ADMIN_EMAIL']){
+            $email->addBcc($_ENV['ADMIN_EMAIL']);
+        }
         
         $this->mailer->send($email);
 
