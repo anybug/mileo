@@ -53,7 +53,7 @@ class OrderListener
         ]);
 
         if($_ENV['ADMIN_EMAIL']){
-            $email->addBcc($_ENV['ADMIN_EMAIL']);
+            $email->addBcc(new Address($_ENV['ADMIN_EMAIL']));
         }
         
         $this->mailer->send($email);
