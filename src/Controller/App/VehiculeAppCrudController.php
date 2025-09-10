@@ -112,6 +112,8 @@ class VehiculeAppCrudController extends AbstractCrudController
         yield TextField::new('scale', 'Barème : estimation de la distance annuelle parcourue')->hideOnForm();    
         yield Field::new('hasLatestScale', 'Barème à jour')->onlyOnIndex()->setTemplatePath('App/Fields/boolean.html.twig');  
         
+        yield BooleanField::new('is_electric', 'Ce véhicule est électrique')->setHelp("Le montant des frais de déplacement est majoré de 20 % pour les véhicules électriques.")->renderAsSwitch(Crud::PAGE_INDEX != $pageName);
+
         yield IntegerField::new('kilometres', 'Kilométrage')->setHelp("Facultatif: indiquez ici le kilométrage du véhicule si vous souhaitez qu'il apparaisse sur les rapports.")->hideOnIndex();
 
         if(Crud::PAGE_EDIT == $pageName){

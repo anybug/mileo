@@ -59,17 +59,23 @@
         %}
 
     <tr class="bg-light text-secondary">
-        <td colspan="2">{{ vt.Vehicule }}</td>
-            <td> 
-                {{ vt.km }} km 
-                {% if vt.warning is defined %}
-                    <i class="fa fa-exclamation-triangle mx-2 text-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="{{vt.warning|trans}}"></i>           
-                {% endif %}
+        <td colspan="2">
+            {{ vt.Vehicule }}
+            {% if vt.Vehicule.isElectric %}
+                <span>(+ 20%)</span>
+                <i class="fa fa-circle-info mx-2 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{"Une majoration de 20% est appliquée pour les véhicules électriques"|trans}}"></i> 
+            {% endif %}    
+        </td>
+        <td> 
+            {{ vt.km }} km 
+            {% if vt.warning is defined %}
+                <i class="fa fa-exclamation-triangle mx-2 text-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="{{vt.warning|trans}}"></i>           
+            {% endif %}
 
-                {% if vt.info is defined %}
-                    <i class="fa fa-circle-info mx-2 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{vt.info|trans}}"></i>           
-                {% endif %}
-            </td>
+            {% if vt.info is defined %}
+                <i class="fa fa-circle-info mx-2 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{vt.info|trans}}"></i>           
+            {% endif %}
+        </td>
         <td>
             {{ vt.amount|number_format(2, ',', ' ') }} {{ 'EUR'|currency_symbol }}
             

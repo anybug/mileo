@@ -123,6 +123,11 @@ class VehiculesReport
             }
         }
         $grandTotal = $total + ($this->getScale()->getAmount()/12);
+        //majoration de 20% pour les VE
+        if($this->getVehicule()->isElectric()){
+            $major = round($grandTotal * 0.20, 2);
+            $grandTotal += $major;
+        }
         $this->setKm($km);
         $this->setTotal($grandTotal);
     }

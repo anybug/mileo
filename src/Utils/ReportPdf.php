@@ -204,7 +204,7 @@ class ReportPdf extends TCPDF
                 $table_body .= '<td class="line" width="10%" align="center">'.$line->getTravelDate()->format('d/m/Y').'</td>';
                 $table_body .= '<td class="line" width="23%">'.$line->getStartAdress().'</td>';
                 $table_body .= '<td class="line" width="23%">'.$line->getEndAdress().'</td>';
-                $table_body .= '<td class="line" width="23%">'.nl2br($line->getComment()).'</td>';
+                $table_body .= '<td class="line" width="23%">'.nl2br(htmlspecialchars($line->getComment())).'</td>';
                 $table_body .= '<td class="line" width="9%" align="center">'.$line->getKm().' km</td>';
                 $table_body .= '<td class="line" width="4%" align="center">'.$is_return.'</td>';
                 $table_body .= '<td class="line" width="8%" align="center">'.$line->getKmTotal().' km</td>';
@@ -227,8 +227,10 @@ class ReportPdf extends TCPDF
         $table_footer .= '</tr>';
 
         foreach ($this->vehiculesTotals as $key => $vehicule) {
+            $vscale = $vehicule['Vehicule']->getPower().': '.$vehicule['Vehicule']->getScale();
+            $vscale .= $vehicule['Vehicule']->isElectric() ? ' +20%': '';
             $table_footer .= '<tr>';
-            $table_footer .= '<td width="72%" class="subtitle_footer" align="left">'.$vehicule['Vehicule'].' <i><span class="line">'.$vehicule['Vehicule']->getPower().': '.$vehicule['Vehicule']->getScale().'</i></span></td>';
+            $table_footer .= '<td width="72%" class="subtitle_footer" align="left">'.$vehicule['Vehicule'].' <i><span class="line">'.$vscale.'</i></span></td>';
             $table_footer .= '<td width="14%" class="subtitle_footer">'.$vehicule['km'].' km</td>';
             $table_footer .= '<td width="14%" class="subtitle_footer">'.number_format($vehicule['amount'], 2, ',', ' ').' €</td>';
             $table_footer .= '</tr>';

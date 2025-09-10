@@ -67,6 +67,11 @@ class Vehicule
     private $reportlines;
 
     /**
+     * @ORM\Column(type="boolean", nullable=true)
+     */
+    private $is_electric;
+
+    /**
      * @ORM\Column(type="integer", nullable=true)
      */
     private $kilometres;
@@ -178,7 +183,10 @@ class Vehicule
 
     public function __toString()
     {
-        return $this->getBrand() . ' ' . $this->getModel() ;
+        $string = $this->getBrand() . ' ' . $this->getModel();
+        $string .= $this->isElectric() ? ' Elec.' : '';
+
+        return $string;
     }
 
     /**
@@ -253,6 +261,28 @@ class Vehicule
     public function setKilometres(?int $kilometres): static
     {
         $this->kilometres = $kilometres;
+
+        return $this;
+    }
+
+    public function isElectric(): ?bool
+    {
+        return $this->is_electric;
+    }
+
+    public function isIsElectric(): ?bool
+    {
+        return $this->is_electric;
+    }
+
+    public function getIsElectric(): ?bool
+    {
+        return $this->is_electric;
+    }
+
+    public function setIsElectric(?bool $is_electric): static
+    {
+        $this->is_electric = $is_electric;
 
         return $this;
     }
