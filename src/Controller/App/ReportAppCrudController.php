@@ -8,6 +8,7 @@ use App\Entity\Scale;
 use App\Entity\Report;
 use App\Entity\Vehicule;
 use App\Utils\ReportPdf;
+use App\Service\XlsxExporter;
 use App\Entity\ReportLine;
 use App\Form\FindByYearType;
 use App\Form\ReportLineType;
@@ -69,11 +70,13 @@ class ReportAppCrudController extends AbstractCrudController
     private $entityManager;
     private $adminUrlGenerator;
     private $formChangeScale;
+    private $exporter;
 
-    public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator)
+    public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator, XlsxExporter $exporter)
     {
         $this->entityManager = $entityManager;
         $this->adminUrlGenerator = $adminUrlGenerator;
+        $this->exporter = $exporter;
     }
 
     public static function getEntityFqcn(): string
@@ -165,16 +168,24 @@ class ReportAppCrudController extends AbstractCrudController
         $actions = parent::configureActions($actions);
 
         $generatePdf = Action::new('generatePdf')
-            ->setIcon("fa fa-download")
-            ->setLabel("Télécharger en pdf")
+            ->setIcon("fa fa-file-pdf")
+            ->setLabel("PDF")
             //->setCssClass('btn btn-primary')
-            ->linkToCrudAction('generatePdf');
+            ->linkToCrudAction('generatePdf')
+            //->displayIf(fn ($entity) => count($entity->getLines()) > 0)   
+        ;
 
         $duplicateAction = Action::new('duplicate', 'Duplicate')
             ->linkToCrudAction('duplicateReport')
             ->setIcon("fa fa-copy")
             ->setCssClass("duplicate-report-action")
-            ;    
+        ;
+        
+        $exportXls = Action::new('exportXls', 'exportXls')
+            ->linkToCrudAction('exportXls')
+            ->setLabel("Excel")
+            ->setIcon("fa fa-file-excel")
+        ;
 
         return $actions
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
@@ -188,6 +199,7 @@ class ReportAppCrudController extends AbstractCrudController
             })
             ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_INDEX, $generatePdf)
+            ->add(Crud::PAGE_INDEX, $exportXls)
             ;
     }
 
@@ -386,6 +398,30 @@ class ReportAppCrudController extends AbstractCrudController
             'form' => $form->createView(),
             'original' => $original,
         ]);
+    }
+
+    public function exportXls(AdminContext $context): Response
+    {
+        $report = $context->getEntity()->getInstance();
+
+        $rows = [];
+        foreach ($report->getLines() as $line) {
+
+            $rows[] = [
+                'Véhicule'      => $line->getVehicule(),
+                'Date'      => $line->getTravelDate()->format('d/m/Y'),
+                'Départ'     => $line->getStartAdress(),
+                'Arrivé' => $line->getEndAdress(),
+                'Motif'     => str_replace('<br />', '\n', $line->getComment()),
+                'Distance'   => $line->getKmTotal(),
+            ];
+        }
+
+        $slug = $report->getUser() . '_' . $report->getId();
+        $fileName = sprintf('Fiche_kilometrique_%s.xlsx', $slug);
+
+
+        return $this->exporter->export($rows, $fileName, 'xlsx');
     }
 
     public function getRedirectResponseAfterSave(AdminContext $context, string $action): RedirectResponse

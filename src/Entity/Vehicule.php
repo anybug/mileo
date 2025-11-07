@@ -69,7 +69,7 @@ class Vehicule
     /**
      * @ORM\Column(type="boolean", nullable=true)
      */
-    private $is_electric;
+    private $is_electric = false;
 
     /**
      * @ORM\Column(type="integer", nullable=true)

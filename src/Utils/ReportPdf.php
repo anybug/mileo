@@ -103,7 +103,6 @@ class ReportPdf extends TCPDF
             $this->Cell(0, 1, '', 'B', 0, 'C', 0, '', 0, false, 'M', 'M');
             //$this->SetY(44);
         }
-        
     }
 
     // Page footer
@@ -123,10 +122,13 @@ class ReportPdf extends TCPDF
         $linesPerVehicule = [];
         $key=0;
         foreach ($reports as $report) {
-           foreach ($report->getLines() as $line) {
-               $linesPerVehicule[$line->getVehicule()->__toString()][$key] = $line;
-               $key++;
-           }
+           if($report->getLines() && count($report->getLines()) > 0){
+                foreach ($report->getLines() as $line) {
+                    $linesPerVehicule[$line->getVehicule()->__toString()][$key] = $line;
+                    $key++;
+                }
+           } 
+           
         }
 
         $totals = ['km' => 0, 'amount' => 0];

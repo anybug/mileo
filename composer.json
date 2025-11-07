@@ -28,6 +28,7 @@
         "php-http/guzzle6-adapter": "^2.0",
         "php-http/message-factory": "^1.1",
         "phpdocumentor/reflection-docblock": "^5.2",
+        "phpoffice/phpspreadsheet": "^5.2",
         "scheb/2fa-google-authenticator": "^5.13",
         "sensio/framework-extra-bundle": "^6.2",
         "stripe/stripe-php": "^7.80",
