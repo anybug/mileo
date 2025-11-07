@@ -8,10 +8,10 @@ use App\Entity\Scale;
 use App\Entity\Report;
 use App\Entity\Vehicule;
 use App\Utils\ReportPdf;
-use App\Service\XlsxExporter;
 use App\Entity\ReportLine;
 use App\Form\FindByYearType;
 use App\Form\ReportLineType;
+use App\Service\XlsxExporter;
 use Doctrine\ORM\QueryBuilder;
 use App\Entity\VehiculesReport;
 use App\Form\ReportDuplicateType;
@@ -45,6 +45,7 @@ use Symfony\Component\Form\Test\FormBuilderInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\BatchActionDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
@@ -71,12 +72,14 @@ class ReportAppCrudController extends AbstractCrudController
     private $adminUrlGenerator;
     private $formChangeScale;
     private $exporter;
+    private $slugger;
 
-    public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator, XlsxExporter $exporter)
+    public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator, XlsxExporter $exporter, SluggerInterface $slugger)
     {
         $this->entityManager = $entityManager;
         $this->adminUrlGenerator = $adminUrlGenerator;
         $this->exporter = $exporter;
+        $this->slugger = $slugger;
     }
 
     public static function getEntityFqcn(): string
@@ -417,7 +420,7 @@ class ReportAppCrudController extends AbstractCrudController
             ];
         }
 
-        $slug = $report->getUser() . '_' . $report->getId();
+        $slug = $this->slugger->slug($report->getUser() . '_' . $report->getStartDate()->format('m-Y'))->lower();
         $fileName = sprintf('Fiche_kilometrique_%s.xlsx', $slug);
 
 
