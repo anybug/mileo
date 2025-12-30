@@ -53,12 +53,13 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Exception\ForbiddenActionException;
 use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
 use EasyCorp\Bundle\EasyAdminBundle\Exception\InsufficientEntityPermissionException;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ReportLineAppCrudController extends AbstractCrudController
 {
     private $entityManager;
     private $adminUrlGenerator;
-    private $cloned = null;
+    private $cloned;
 
     public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator)
     {
@@ -221,12 +222,104 @@ class ReportLineAppCrudController extends AbstractCrudController
         return $reportLine;
         
     }
+
+    public function delete(AdminContext $context)
+    {
+        /** @var ReportLine $line */
+        $line = $context->getEntity()->getInstance();
+        $report = $line->getReport(); // On garde la référence du rapport
+        $year = $line->getTravelDate()->format('Y');
+        $currentYear = (new \DateTime())->format('Y');
+
+        $em = $this->entityManager;
+        $em->remove($line);
+        $em->flush();
+
+        // Vérifier si le rapport mensuel associé est maintenant vide
+        $em->refresh($report);
+        if ($report->getLines()->isEmpty()) {
+            $em->remove($report);
+            $em->flush();
+        }
+
+        // Vérifier s’il reste des lignes globales pour cet utilisateur dans l’année supprimée
+        $remaining = $em->getRepository(ReportLine::class)
+            ->createQueryBuilder('l')
+            ->leftJoin('l.report', 'r')
+            ->where('YEAR(l.travel_date) = :y')
+            ->andWhere('r.user = :user')
+            ->setParameter('y', $year)
+            ->setParameter('user', $this->getUser())
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        // S’il reste des lignes dans la même année : redirection 
+        if ($remaining) {
+            return $this->redirect(
+                $this->adminUrlGenerator
+                    ->setController(self::class)
+                    ->setAction(Action::INDEX)
+                    ->unset('filters') 
+                    ->unset('referrer')
+                    ->generateUrl()
+            );
+        }
+
+        // redirection vers une autre année
+        if ($year !== $currentYear) {
+            return $this->redirect(
+                $this->adminUrlGenerator
+                    ->setController(self::class)
+                    ->setAction(Action::INDEX)
+                    ->unset('referrer')
+                    ->set('filters[period][value]', "01/$currentYear")
+                    ->generateUrl()
+            );
+        }
+
+        // Sinon, on cherche l'année disponible la plus proche (votre logique d'origine)
+        $years = $em->getRepository(ReportLine::class)
+            ->createQueryBuilder('l')
+            ->leftJoin('l.report', 'r')
+            ->select('DISTINCT YEAR(l.travel_date) AS yr')
+            ->andWhere('r.user = :user')
+            ->setParameter('user', $this->getUser())
+            ->orderBy('yr', 'DESC')
+            ->getQuery()
+            ->getScalarResult();
+
+        if (empty($years)) {
+            return $this->redirect(
+                $this->adminUrlGenerator
+                    ->setController(self::class)
+                    ->setAction(Action::INDEX)
+                    ->unset('filters')
+                    ->unset('referrer')
+                    ->generateUrl()
+            );
+        }
+
+        $nextYear = $years[0]['yr'];
+        $firstMonthOfYear = "01/$nextYear";
+
+        return $this->redirect(
+            $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::INDEX)
+                ->unset('referrer')
+                ->set('filters[period][value]', $firstMonthOfYear)
+                ->generateUrl()
+        );
+    }
+
+
     
     public function configureFields(string $pageName): iterable
     {
         $entity = $this->getContext()->getEntity()->getInstance();
         $dateFieldHtmlAttributes = [];
-        if($pageName == Crud::PAGE_EDIT && $entity->getId()){
+        if($pageName == Crud::PAGE_EDIT && $entity?->getId()){
             $firstDayOfMonth = clone $entity->getTravelDate();
             $firstDayOfMonth->modify('first day of this month');
             $lastDayOfMonth = clone $entity->getTravelDate();
@@ -295,12 +388,12 @@ class ReportLineAppCrudController extends AbstractCrudController
         ;
 
         yield HiddenField::new('km','Distance (km)')
-            ->setFormTypeOptions(['attr' => array('readonly'=> true, 'class' => 'report_km bg-light not-allowed')])
+            ->setFormTypeOptions(['attr' => ['readonly'=> true, 'class' => 'report_km bg-light not-allowed']])
             ->onlyOnForms()
             //->setColumns('col-sm-4 col-lg-3 col-xxl-2')
             ;
             yield IntegerField::new('km_total','Distance (km)')
-            ->setFormTypeOptions(['attr' => array('readonly'=> true, 'class' => 'report_km_total bg-light')])
+            ->setFormTypeOptions(['attr' => ['readonly'=> true, 'class' => 'report_km_total bg-light']])
             ->setColumns('col-sm-4 col-lg-3 col-xxl-2')
             ->hideOnIndex()
             ;
@@ -352,7 +445,44 @@ class ReportLineAppCrudController extends AbstractCrudController
         ;
     }
 
-    public function generateAmountAction(AdminContext $context)
+    private function getNormalizedPeriod(AdminContext $context, string $filterName): ?array
+    {
+        $filters = $context->getRequest()->query->all()['filters'][$filterName]['value'] ?? null;
+
+        if (!$filters) {
+            return null;
+        }
+
+        // Cas simple "12/2025"
+        if (is_string($filters)) {
+            [$month, $year] = explode('/', $filters);
+            return [$month, $year];
+        }
+
+        // Cas intervalle : ['start' => '01/12/2025', 'end' => '31/12/2025']
+        if (is_array($filters) && isset($filters['start'])) {
+            $start = \DateTime::createFromFormat('d/m/Y', $filters['start']);
+            return [
+                $start->format('m'),
+                $start->format('Y')
+            ];
+        }
+
+        // Cas inattendu : on tente une récupération intelligente
+        if (is_array($filters)) {
+            $first = reset($filters);
+            if (is_string($first) && str_contains($first, '/')) {
+                [$month, $year] = explode('/', $first);
+                return [$month, $year];
+            }
+        }
+
+        throw new \Exception("Format de période invalide pour le filtre '$filterName'.");
+    }
+
+
+
+    public function generateAmountAction(AdminContext $context): JsonResponse
     {
         $report_id = $context->getRequest()->query->get('report_id') ?? false;
         $report_line_id = $context->getRequest()->query->get('report_line_id') ?? false;
@@ -360,6 +490,8 @@ class ReportLineAppCrudController extends AbstractCrudController
         $distance = $context->getRequest()->query->get('distance') ?? false;
         
         $vehicule = $this->entityManager->getRepository(Vehicule::class)->find($vehicule_id);
+
+        $response = new JsonResponse();
 
         if($report_id){
             $report = $this->entityManager->getRepository(Report::class)->find($report_id);
@@ -389,31 +521,31 @@ class ReportLineAppCrudController extends AbstractCrudController
             $reportLine->setScale($scale);
             $reportLine->setKmTotal($distance);    
             $reportLine->calculateAmount();
-    
-            die(json_encode($reportLine->getAmount()));
+
+            $response->setData(['amount' => $reportLine->getAmount()]);
             //die(json_encode($scale->__toString()));  <- pour verif 
         }
+
+        return $response;
     }
 
     public function generatePdfPerMonth(AdminContext $context)
     {
-        $period = $context->getRequest()->query->get("filters")["period"]["value"];
-        $period = explode('/',$period);
-        $month = $period[0];
-        $year = $period[1];
-        $report = $this->entityManager->getRepository(Report::class)->findByYearAndMonth($year,$month);
+        [$month, $year] = $this->getNormalizedPeriod($context, 'period');
+
+        $report = $this->entityManager
+            ->getRepository(Report::class)
+            ->findByYearAndMonth($year, $month);
+
         $pdf = new ReportPdf();
-        $pdfContent = $pdf->generatePdf([$report],$period,'month');
+        $pdfContent = $pdf->generatePdf([$report], [$month, $year], 'month');
 
-        $response = new Response($pdfContent);
-        $response->headers->set('Content-Type', 'application/pdf');
-        $response->headers->set('Content-Disposition', 'attachment; filename="'.$pdf->generateFilename().'"');
-        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', '0');
-
-        return $response;
+        return new Response($pdfContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$pdf->generateFilename().'"'
+        ]);
     }
+
 
     public function generateFooterLine(KeyValueStore $responseParameters, AdminContext $context) 
     {

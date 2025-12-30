@@ -28,7 +28,7 @@ class RegistrationType extends AbstractType
             /*->add('captcha', ReCaptchaType::class, [
                 'type' => 'checkbox' // (invisible, checkbox)
              ]);*/
-           
+
         ;
     }
 

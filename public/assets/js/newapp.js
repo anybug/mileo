@@ -436,7 +436,11 @@ function requestForGeneratingAmount(line) {
             data: data,
             success: function (data, textStatus, XMLHttpRequest) {
                 $total.removeClass('loading');
-                $total.val(data);
+                if(data.amount)
+                {
+                    $total.val(data.amount);
+                }
+                
                 if (line) {
                     totalForReport();
                 }

@@ -8,41 +8,27 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass=VehiculesReportRepository::class)
- */
+#[ORM\Entity(repositoryClass: VehiculesReportRepository::class)]
 class VehiculesReport
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Report::class, inversedBy="vehiculesReports")
-     */
+    #[ORM\ManyToOne(targetEntity: Report::class, inversedBy: 'vehiculesReports')]
     private $report;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Vehicule::class)
-     */
+    #[ORM\ManyToOne(targetEntity: Vehicule::class)]
     private $vehicule;
     
-    /**
-     * @ORM\ManyToOne(targetEntity=Scale::class)
-     */
+    #[ORM\ManyToOne(targetEntity: Scale::class)]
     private $scale;
 
-    /**
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Column(type: 'integer')]
     private $km;
 
-    /**
-     * @ORM\Column(type="decimal", precision=8, scale=2)
-     */
+    #[ORM\Column(type: 'decimal', precision: 8, scale: 2)]
     private $total;
 
     public function getId(): ?int

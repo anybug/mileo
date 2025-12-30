@@ -16,14 +16,14 @@ use Symfony\Component\Security\Core\Security;
 class VehiculeRepository extends ServiceEntityRepository
 {
     private $security;
-    
+
     public function __construct(ManagerRegistry $registry, Security $security)
     {
         $this->security = $security;
         parent::__construct($registry, Vehicule::class);
     }
 
-    
+
     public function dashboardQuery()
     {
         return $this->createQueryBuilder('v')

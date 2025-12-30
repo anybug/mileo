@@ -30,7 +30,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
 
 class UserAppCrudController extends AbstractCrudController
 {
-    private $passwordEncoder;
+    private $passwordHasher;
     private $entityManager;
 
     public function __construct(UserPasswordHasherInterface $passwordHasher,EntityManagerInterface $entityManager)
@@ -97,14 +97,13 @@ class UserAppCrudController extends AbstractCrudController
         parent::updateEntity($entityManager, $entityInstance);
     }
     
-    private function encodePassword(User $user)
+    private function encodePassword(User $user): void
     {
-        if ($user->getPlainPassword() !== null) {
+        if ($user->getPlainPassword() != null) {
             $hash = $this->passwordHasher->hashPassword($user, $user->getPlainPassword());
             $user->setPassword($hash);
         }
     }
-
     
     public function configureFields(string $pageName): iterable
     {

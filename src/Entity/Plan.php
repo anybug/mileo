@@ -7,71 +7,45 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass=PlanRepository::class)
- */
+#[ORM\Entity(repositoryClass: PlanRepository::class)]
 class Plan
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Column(type: 'string', length: 255)]
     private $name;
 
-    /**
-     * @ORM\Column(type="float", nullable=true)
-     */
+    #[ORM\Column(type: 'float', nullable: true)]
     private $price_per_month;
 
-    /**
-     * @ORM\Column(type="float", nullable=true)
-     */
+    #[ORM\Column(type: 'float', nullable: true)]
     private $price_per_year;
 
-    /**
-     * @ORM\Column(type="integer", length=5)
-     */
+    #[ORM\Column(type: 'integer', length: 5)]
     private $plan_period;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Subscription::class, mappedBy="plan")
-     */
+    #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'plan')]
     private $subscriptions;
 
-    /**
-     * @ORM\Column(type="float")
-     */
+    #[ORM\Column(type: 'float')]
     private $totalCost;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Column(type: 'string', length: 255)]
     private $billingDetails;
 
-    /**
-     * @ORM\Column(type="float", nullable=true)
-     */
+    #[ORM\Column(type: 'float', nullable: true)]
     private $oldPrice;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private $savingPercentage;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Order::class, mappedBy="Plan")
-     */
+    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'Plan')]
     private $orders;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Column(type: 'string', length: 255)]
     private $plan_description;
 
     public function __construct()

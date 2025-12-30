@@ -15,9 +15,9 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 class XlsxExporter
 {
-    public function __construct(
-        private TranslatorInterface $translator
-    ){}
+    public function __construct()
+    {
+    }
 
     public function export(array $data, string $filename = 'export.xlsx', string $type = 'Xlsx'): StreamedResponse
     {
@@ -47,7 +47,7 @@ class XlsxExporter
 
         // Data
         $rowNum = 2;
-        foreach ($data as $label => $item) {
+        foreach ($data as $item) {
             $colIndex = 1;
             foreach ($item as $value) {
                 $col = Coordinate::stringFromColumnIndex($colIndex);

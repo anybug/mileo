@@ -14,8 +14,6 @@ class UserStep2Type extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $choices = array_values(User::getBalanceStartPeriods());
-
         $builder
         ->add('first_name', null, [
             'required' => true,

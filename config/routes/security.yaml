@@ -1,0 +1,6 @@
+connect_google_start:
+    path: /connect/google
+    controller: App\Controller\SecurityController::connectGoogle
+
+connect_google_check:
+    path: /connect/google/check

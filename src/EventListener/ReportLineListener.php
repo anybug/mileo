@@ -70,7 +70,6 @@ class ReportLineListener
 
     public function postPersist(LifecycleEventArgs $args): void
     {
-        $em = $args->getObjectManager();
         $entity = $args->getObject();
 
         if($entity instanceof ReportLine)
@@ -102,7 +101,6 @@ class ReportLineListener
 
     public function postUpdate(LifecycleEventArgs $args): void
     {
-        $em = $args->getObjectManager();
         $entity = $args->getObject();
 
         if($entity instanceof ReportLine)
@@ -120,14 +118,18 @@ class ReportLineListener
         {
             $this->report = $entity->getReport();
             $this->report->setUpdatedAt(new \DateTimeImmutable());
+           
             $em->persist($this->report);
             $em->flush();
+            
+            if ($em->contains($this->report)) {
+                $em->refresh($this->report); 
+            }
         }
     }
 
     public function preRemove(LifecycleEventArgs $args): void
     {
-        $em = $args->getObjectManager();
         $entity = $args->getObject();
         if($entity instanceof ReportLine)
         {

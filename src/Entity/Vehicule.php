@@ -9,71 +9,47 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Validator\Constraints as AppAssert;
 
-/**
- * @ORM\Entity(repositoryClass=VehiculeRepository::class)
- */
+#[ORM\Entity(repositoryClass: VehiculeRepository::class)]
 class Vehicule
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=User::class, inversedBy="vehicules")
-     */
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'vehicules')]
     private $user;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Brand::class, inversedBy="vehicules")
-     * @ORM\JoinColumn(nullable=false)
-     * @Assert\NotBlank
-     */
+    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Brand::class, inversedBy: 'vehicules')]
+    #[Assert\NotBlank]
     private $brand;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Power::class, inversedBy="vehicules")
-     * @ORM\JoinColumn(nullable=false)
-     */
+    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Power::class, inversedBy: 'vehicules')]
     private $power;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
     private $type;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
     private $model;
 
-    /**
-     * @ORM\Column(type="boolean", nullable=true)
-     */
+    #[ORM\Column(type: 'boolean', nullable: true)]
     private $is_default;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Scale::class, inversedBy="reportlines")
-     */
+    #[ORM\ManyToOne(targetEntity: Scale::class, inversedBy: 'reportlines')]
     private $scale;
     
-    /**
-     * @ORM\OneToMany(targetEntity=ReportLine::class, mappedBy="vehicule", cascade={"remove"})
-     */
+    #[ORM\OneToMany(targetEntity: ReportLine::class, mappedBy: 'vehicule', cascade: ['remove'])]
     private $reportlines;
 
-    /**
-     * @ORM\Column(type="boolean", nullable=true)
-     */
+    #[ORM\Column(type: 'boolean', nullable: true)]
     private $is_electric = false;
 
-    /**
-     * @ORM\Column(type="integer", nullable=true)
-     */
+    #[ORM\Column(type: 'integer', nullable: true)]
     private $kilometres;
 
     const TYPE_CAR = 'Car';

@@ -103,18 +103,18 @@ class DashboardAppController extends AbstractDashboardController
         ;
     }
 
-    /**
-     * @Route("/dashboard", name="app")
-     */
+    #[Route(path: '/dashboard', name: 'app')]
     public function index(): Response
     {
         $request = $this->container->get('request_stack')->getCurrentRequest();
         $step2 = $request->query->get('step2') ?? false;
-        $step3 = $request->query->get('step3') ?? false;
+        $request->query->get('step3') ?? false;
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
+        dump($user);
         $step = [];
 
-        if (!$user->getSubscription()->isValid()) {
+        if (!$user->getSubscription() || !$user->getSubscription()->isValid()) {
 
             $url = $this->adminUrlGenerator
             ->setController(UserAppCrudController::class)
@@ -158,12 +158,12 @@ class DashboardAppController extends AbstractDashboardController
                 return $this->redirectToRoute('app', ['menuIndex' => 0, 'submenuIndex' => '-1']);
             }
 
-            return $this->render('App/Dashboard/wizard.html.twig', array(
+            return $this->render('App/Dashboard/wizard.html.twig', [
                 'dashboard' => $this->easyAdminDashboard->generateDashboardValues(),
                 'layout_template_path' => $this->easyAdminDashboard->getLayoutTemplate(),
                 'form' => $form->createView(),
                 'step' => $step,
-            ));
+            ]);
         }
    
         $yearSelected = date('Y');
@@ -275,14 +275,14 @@ class DashboardAppController extends AbstractDashboardController
             );
         }
 
-        return $this->render('App/Dashboard/index.html.twig', array(
+        return $this->render('App/Dashboard/index.html.twig', [
             'dashboard' => $this->easyAdminDashboard->generateDashboardValues(),
             'layout_template_path' => $this->easyAdminDashboard->getLayoutTemplate(),
             'chartAnnuel' => $chartAnnuel,
             'chartTotal' => $chartTotal,
             'years' => $resultListYears,
             'yearSelected' => $yearSelected
-        ));
+        ]);
     }
 
     public function configureDashboard(): Dashboard
@@ -297,14 +297,11 @@ class DashboardAppController extends AbstractDashboardController
 
     public function configureMenuItems(): iterable
     {
-        $date= new \DateTime();
         yield MenuItem::linktoDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Travels');
         yield MenuItem::linkToCrud('My travels', 'fa fa-road', ReportLine::class);
-            //->setQueryParameter('filters[period][value]', $date->format('F')."/".$date->format('Y'));
         yield MenuItem::linkToCrud('Monthly reports', 'fa fa-road', Report::class);
-            //->setQueryParameter('filters[Period][value]', $date->format('Y'));
 
         yield MenuItem::section('Parameters');
         yield MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class)->setController(UserAppCrudController::class);

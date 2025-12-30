@@ -39,7 +39,6 @@ class FindByYearType extends AbstractType
     }
 
     public function getYear() {
-        $user = $this->security->getUser();
         $reportLines = $this->entityManager->getRepository(ReportLine::class)->getLineForUser();
         foreach ($reportLines as $line) {
             $choice[$line->getTravelDate()->format("Y")] = $line->getTravelDate()->format("Y");

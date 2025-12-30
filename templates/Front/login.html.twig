@@ -1,10 +1,36 @@
 {% extends 'Front/layout/base-layout-applab.html.twig' %}
 
+{% block stylesheets %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    {{ parent() }}
+{% endblock %}
 
 {% block javascripts %}
     <script type="text/javascript">
-        addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); }
+        addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false);
+        function hideURLbar(){ window.scrollTo(0,1); }
     </script>
+
+    <script>
+        window.addEventListener('load', function () {
+            const passwordInput = document.getElementById('password');
+            const toggleButton  = document.getElementById('togglePassword');
+            const toggleIcon    = document.getElementById('togglePasswordIcon');
+
+            console.log('Elements :', passwordInput, toggleButton, toggleIcon);
+
+            if (!toggleButton) return; // Si encore null = ton layout bloque ton JS
+
+            toggleButton.addEventListener('click', () => {
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+
+                toggleIcon.classList.toggle('bi-eye-fill');
+                toggleIcon.classList.toggle('bi-eye-slash-fill');
+            });
+        });
+        </script>
+
 {% endblock %}
 
 {% block page_content %}
@@ -40,23 +66,28 @@
                             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
                             
                             <div class="form-group mb-4">
-                                <label class="form-control-label required" for="email">{{ "Email address"|trans }}</label>
+                                <label class="form-control-label required" for="username">{{ "Email address"|trans }}</label>
                                 <div class="form-widget">
-                                    <input type="text" id="email" name="_email" class="form-control" value="{{ last_username|default('') }}" required autofocus autocomplete="username">
+                                    <input type="text" id="username" name="_username" class="form-control" value="{{ last_username|default('') }}" required autofocus autocomplete="username">
                                 </div>
                             </div>
 
                             <div class="form-group mb-4">
                                 <label class="form-control-label required" for="password">{{ "Password"|trans }}</label>
-                                <div class="form-widget">
+
+                                <div class="input-group">
                                     <input type="password" id="password" name="_password" class="form-control" required autocomplete="current-password">
+
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="bi bi-eye-fill" id="togglePasswordIcon"></i>
+                                    </button>
                                 </div>
 
                                 <div class="mt-2">
                                     <a href="{{ path('forgotten_password') }}" class="text-primary">{{ "Forgot password ?"|trans }}</a>
                                 </div>
-                                
                             </div>
+
 
                             <div class="form-group">
                             {#
@@ -79,7 +110,7 @@
 
                 <div class="row">
                     <div class="text-center">
-                        <a class="btn btn-lg btn-outline-primary btn-block text-uppercase form-control" href="{{ path('connect_google') }}"><img src="https://img.icons8.com/color/16/000000/google-logo.png">&nbsp;&nbsp;&nbsp;{{ "Connect with Google"|trans }}</a>
+                        <a class="btn btn-lg btn-outline-primary btn-block text-uppercase form-control" href="{{ path('connect_google_start') }}"><img src="https://img.icons8.com/color/16/000000/google-logo.png">&nbsp;&nbsp;&nbsp;{{ "Connect with Google"|trans }}</a>
                     </div>
                 </div>    
 			

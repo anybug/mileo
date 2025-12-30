@@ -31,7 +31,7 @@ class ReportLineType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('travel_date', DateType::class, array(
+        $builder->add('travel_date', DateType::class, [
         'widget' => 'single_text',
         'required' => true,
         'label_attr' => ['class' => 'required'],
@@ -39,9 +39,9 @@ class ReportLineType extends AbstractType
             'class' => 'report_lines_travel_date',
             'required' => 'required',
             ]
-        ));
+        ]);
 
-        $builder->add('vehicule', EntityType::class, array(
+        $builder->add('vehicule', EntityType::class, [
             "class" => Vehicule::class,
             'required' => true,
             'label_attr' => ['class' => 'required'],
@@ -52,30 +52,30 @@ class ReportLineType extends AbstractType
             },
             'preferred_choices' => [$this->tokenStorage->getToken()->getUser()->getDefaultVehicule()],
             'attr' => ['class'=>'report_lines_vehicule','required' => 'required']
-        ));
+        ]);
 
-        $builder->add('startAdress', null, array (
+        $builder->add('startAdress', null,  [
             'required' => true,
             'label_html' => true,
             'label_attr' => ['class' => 'required'],
             'help' => 'Saisissez une adresse ou <a class="popup-fav-lines-start">selectionnez une de vos <i class="fa fa-map-marker-alt"></i></a>',
             'attr' => ['class' => 'autocomplete report_lines_start','required' => 'required']
-        ));
+        ]);
 
-        $builder->add('endAdress', null, array (
+        $builder->add('endAdress', null,  [
             'required' => true,
             'label_html' => true,
             'label_attr' => ['class' => 'required'],
             'help' => 'Saisissez une adresse ou <a class="popup-fav-lines-end">selectionnez une de vos <i class="fa fa-map-marker-alt"></i></a>',
             'attr' => ['class' => 'autocomplete report_lines_end','required' => 'required']
-        ));
+        ]);
 
-        $builder->add('km', HiddenType::class, array('label_attr' => ['class' => 'required'],'required' => true,'attr' => array('readonly'=> true, 'class' => 'report_lines_km','required' => 'required')));
-        $builder->add('is_return', CheckboxType::class, array('required' => true, 'attr' => array('class' => 'report_lines_is_return')));
-        $builder->add('km_total', null, array('label_attr' => ['class' => 'required'],'required' => true,'attr' => array('readonly'=> true, 'class' => 'report_lines_km_total','required' => 'required')));
-        $builder->add('comment', TextareaType::class ,array('required' => true, 'label' => 'Motif du déplacement','label_attr' => ['class' => 'required'], 'attr' => array('required' => 'required','class ' => 'report_lines_comment form-control', 'placeholder' => "Saisissez une courte description qui justifie ce trajet")));
+        $builder->add('km', HiddenType::class, ['label_attr' => ['class' => 'required'],'required' => true,'attr' => ['readonly'=> true, 'class' => 'report_lines_km','required' => 'required']]);
+        $builder->add('is_return', CheckboxType::class, ['required' => true, 'attr' => ['class' => 'report_lines_is_return']]);
+        $builder->add('km_total', null, ['label_attr' => ['class' => 'required'],'required' => true,'attr' => ['readonly'=> true, 'class' => 'report_lines_km_total','required' => 'required']]);
+        $builder->add('comment', TextareaType::class ,['required' => true, 'label' => 'Motif du déplacement','label_attr' => ['class' => 'required'], 'attr' => ['required' => 'required','class ' => 'report_lines_comment form-control', 'placeholder' => "Saisissez une courte description qui justifie ce trajet"]]);
         
-        $builder->add('amount', null, array('label_attr' => ['class' => 'required'],'required' => true,'attr' => array('readonly'=> true, 'class' => 'report_lines_amount bg-light', 'required' => 'required')));
+        $builder->add('amount', null, ['label_attr' => ['class' => 'required'],'required' => true,'attr' => ['readonly'=> true, 'class' => 'report_lines_amount bg-light', 'required' => 'required']]);
     }
 
     public function getName()

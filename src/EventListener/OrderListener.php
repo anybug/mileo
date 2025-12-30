@@ -42,7 +42,6 @@ class OrderListener
 
     public function mailConfirmation(LifecycleEventArgs $args)
     {
-        $entityManager = $args->getObjectManager();
         $entity = $args->getObject();
         $email = (new TemplatedEmail())
         ->to(new Address($entity->getUser()->getEmail()))

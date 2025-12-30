@@ -2,81 +2,62 @@
 
 namespace App\Controller\App;
 
-use FTP\Connection;
-use App\Entity\Brand;
-use App\Entity\Scale;
 use App\Entity\Report;
-use App\Entity\Vehicule;
-use App\Utils\ReportPdf;
 use App\Entity\ReportLine;
-use App\Form\FindByYearType;
-use App\Form\ReportLineType;
-use App\Service\XlsxExporter;
-use Doctrine\ORM\QueryBuilder;
 use App\Entity\VehiculesReport;
 use App\Form\ReportDuplicateType;
+use App\Form\ReportLineType;
 use App\Form\ReportTotalScaleType;
-use Doctrine\ORM\EntityRepository;
+use App\Utils\ReportPdf;
 use App\Validator\Constraints\NewReport;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\XlsxExporter;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use App\Controller\App\Filter\ReportYearFilter;
-use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\EntityManagerInterface;
+
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use App\Controller\App\Filter\ReportYearFilterType;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
-use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use Symfony\Component\Form\Test\FormBuilderInterface;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\String\Slugger\SluggerInterface;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\BatchActionDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
+
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
-use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
+
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ReportAppCrudController extends AbstractCrudController
 {
-    private $entityManager;
     private $adminUrlGenerator;
-    private $formChangeScale;
     private $exporter;
     private $slugger;
+    private $formChangeScale = [];
 
-    public function __construct(EntityManagerInterface $entityManager,AdminUrlGenerator $adminUrlGenerator, XlsxExporter $exporter, SluggerInterface $slugger)
-    {
-        $this->entityManager = $entityManager;
+    public function __construct(
+        \EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator $adminUrlGenerator,
+        XlsxExporter $exporter,
+        SluggerInterface $slugger
+    ) {
         $this->adminUrlGenerator = $adminUrlGenerator;
         $this->exporter = $exporter;
         $this->slugger = $slugger;
@@ -89,40 +70,36 @@ class ReportAppCrudController extends AbstractCrudController
 
     public function configureAssets(Assets $assets): Assets
     {
-        return $assets
-            ->addHtmlContentToBody('<script src="https://maps.googleapis.com/maps/api/js?key=' . $_ENV['GOOGLE_MAPS_API_KEY'] . '&libraries=places"></script>')
-        ;
+        return $assets->addHtmlContentToBody(
+            '<script src="https://maps.googleapis.com/maps/api/js?key=' . $_ENV['GOOGLE_MAPS_API_KEY'] . '&libraries=places"></script>'
+        );
     }
 
-    public function configureResponseParameters(KeyValueStore $responseParameters): KeyValueStore
+    public function configureResponseParameters(KeyValueStore $parameters): KeyValueStore
     {
         $context = $this->getContext();
+        $new = parent::configureResponseParameters($parameters);
 
-        $newResponseParameters = parent::configureResponseParameters($responseParameters);
-
-        $pageName = $newResponseParameters->get('pageName');
-        if($pageName == Crud::PAGE_INDEX){
-            $newResponseParameters = $this->generateFooterLine($newResponseParameters, $context);
+        if ($new->get('pageName') === Crud::PAGE_INDEX) {
+            $new = $this->generateFooterLine($new, $context);
         }
 
-        return $newResponseParameters;
+        return $new;
     }
 
     public function index(AdminContext $context)
     {
         if (!$this->getUser()->getSubscription()->isValid()) {
-
-            $url = $this->adminUrlGenerator
-            ->setController(UserAppCrudController::class)
-            ->setAction(Action::INDEX)
-            ->generateUrl();
-
-            return $this->redirect($url);
+            return $this->redirect(
+                $this->adminUrlGenerator
+                    ->setController(UserAppCrudController::class)
+                    ->setAction(Action::INDEX)
+                    ->generateUrl()
+            );
         }
 
-        if(!$this->getUser()->hasCompletedSetup())
-        {
-            return $this->redirectToRoute('app', ['menuIndex' => 0, 'submenuIndex' => '-1']);
+        if (!$this->getUser()->hasCompletedSetup()) {
+            return $this->redirectToRoute('app', ['menuIndex' => 0, 'submenuIndex' => -1]);
         }
 
         return parent::index($context);
@@ -130,42 +107,43 @@ class ReportAppCrudController extends AbstractCrudController
 
     public function createEntity(string $entityFqcn)
     {
-        $context = $this->container->get(AdminContextProvider::class)->getContext();
-        
         $report = new $entityFqcn();
         $report->setUser($this->getUser());
-        
         return $report;
     }
-    
-    public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
-    {
-        $queryBuilder = parent::createIndexQueryBuilder($searchDto, $entityDto, $fields, $filters);
 
-        $queryBuilder->andWhere('entity.user = (:user)')
-                     ->setParameter('user', $this->getUser());
-
-        //dd($queryBuilder->getQuery()->getSql());
-
-        return $queryBuilder;
+    public function createIndexQueryBuilder(
+        SearchDto $search,
+        EntityDto $entity,
+        FieldCollection $fields,
+        FilterCollection $filters
+    ): QueryBuilder {
+        return parent::createIndexQueryBuilder($search, $entity, $fields, $filters)
+            ->andWhere('entity.user = :user')
+            ->setParameter('user', $this->getUser());
     }
 
     public function configureCrud(Crud $crud): Crud
     {
         return $crud
-        ->setDefaultSort(['start_date' => 'ASC'])
-        ->setPageTitle('index', 'Reports')
-        ->setPageTitle('edit', fn (Report $report) => sprintf('Modifier le rapport de %s', $report->getPeriod()))
-        ->setPageTitle('new', 'New report period')
-        ->setFormOptions(['validation_groups' => ['new','default']], ['validation_groups' => ['default','edit']])
-        ->overrideTemplate('crud/index', 'App/Report/index.html.twig')
-        ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
-        ->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
-        ->overrideTemplate('crud/filters', 'App/Report/filters.html.twig')
-        ->addFormTheme('App/Report/form_theme.html.twig')
-        ;
+            ->setDefaultSort(['start_date' => 'ASC'])
+            ->setPageTitle('index', 'Reports')
+            ->setPageTitle('edit', fn (Report $r) => sprintf('Modifier le rapport de %s', $r->getPeriod()))
+            ->setPageTitle('new', 'New report period')
+
+            ->overrideTemplate('crud/index', 'App/Report/index.html.twig')
+            ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
+            ->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
+            ->overrideTemplate('crud/filters', 'App/Report/filters.html.twig')
+
+            ->addFormTheme('App/Report/form_theme.html.twig')
+
+            ->setFormOptions(
+                ['validation_groups' => ['new','default']],
+                ['validation_groups' => ['default','edit']]
+            );
     }
-    
+
     public function configureActions(Actions $actions): Actions
     {
         $actions = parent::configureActions($actions);
@@ -173,157 +151,288 @@ class ReportAppCrudController extends AbstractCrudController
         $generatePdf = Action::new('generatePdf')
             ->setIcon("fa fa-file-pdf")
             ->setLabel("PDF")
-            //->setCssClass('btn btn-primary')
-            ->linkToCrudAction('generatePdf')
-            //->displayIf(fn ($entity) => count($entity->getLines()) > 0)   
-        ;
+            ->linkToCrudAction('generatePdf');
 
         $duplicateAction = Action::new('duplicate', 'Duplicate')
             ->linkToCrudAction('duplicateReport')
             ->setIcon("fa fa-copy")
-            ->setCssClass("duplicate-report-action")
-        ;
-        
-        $exportXls = Action::new('exportXls', 'exportXls')
+            ->setCssClass("duplicate-report-action");
+
+        $exportXls = Action::new('exportXls', 'Excel')
             ->linkToCrudAction('exportXls')
-            ->setLabel("Excel")
-            ->setIcon("fa fa-file-excel")
-        ;
+            ->setIcon("fa fa-file-excel");
 
         return $actions
+
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_ADD_ANOTHER)
             ->add(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE)
-            ->update(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE, function (Action $action) {
-                return $action->setIcon("fa-solid fa-arrow-right")->setLabel("Next")->setCssClass('btn btn-primary suivant');
-            })
-            ->update(Crud::PAGE_INDEX, Action::NEW, function (Action $action) {
-                return $action->setCssClass('btn btn-primary new-report-action');
-            })
+            ->update(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE, fn(Action $a) =>
+                $a->setIcon("fa-solid fa-arrow-right")
+                  ->setLabel("Next")
+                  ->setCssClass('btn btn-primary suivant')
+            )
+
+            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $a) =>
+                $a->setCssClass('btn btn-primary new-report-action')
+            )
+
             ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_INDEX, $generatePdf)
-            ->add(Crud::PAGE_INDEX, $exportXls)
-            ;
+            ->add(Crud::PAGE_INDEX, $exportXls);
     }
 
     public function edit(AdminContext $context)
     {
-        $report = $context->getEntity()->getInstance();
-        $currentUser = $this->getUser();
-
-        if ($report->getUser() !== $currentUser) {
+        if ($context->getEntity()->getInstance()->getUser() !== $this->getUser()) {
             throw new AccessDeniedHttpException();
         }
-
         return parent::edit($context);
     }
+
+    /*private function getNormalizedPeriod(AdminContext $context, string $filterName): ?array
+    {
+        $value = $context->getRequest()->query->all()['filters'][$filterName]['value'] ?? null;
+
+        if (!$value) {
+            return null;
+        }
+
+        // Format attendu : "Jan 2025 -> Dec 2025"
+        if (is_string($value) && str_contains($value, '->')) {
+
+            [$startRaw, $endRaw] = array_map('trim', explode('->', $value));
+
+            // startRaw = "Jan 2025"
+            // endRaw   = "Dec 2025"
+
+            [$startMonthName, $startYear] = explode(' ', $startRaw);
+            [$endMonthName,   $endYear]   = explode(' ', $endRaw);
+
+            // Conversion mois abrégés → numérique
+            $months = [
+                'Jan' => '01', 'Feb' => '02', 'Mar' => '03',
+                'Apr' => '04', 'May' => '05', 'Jun' => '06',
+                'Jul' => '07', 'Aug' => '08', 'Sep' => '09',
+                'Oct' => '10', 'Nov' => '11', 'Dec' => '12'
+            ];
+
+            return [
+                $months[$startMonthName] ?? null,  // mois début
+                $startYear,
+                $months[$endMonthName] ?? null,    // mois fin
+                $endYear
+            ];
+        }
+
+        // Format simple : "Jan 2025"
+        if (is_string($value) && str_contains($value, ' ')) {
+
+            [$monthName, $year] = explode(' ', $value);
+
+            $months = [
+                'Jan' => '01', 'Feb' => '02', 'Mar' => '03',
+                'Apr' => '04', 'May' => '05', 'Jun' => '06',
+                'Jul' => '07', 'Aug' => '08', 'Sep' => '09',
+                'Oct' => '10', 'Nov' => '11', 'Dec' => '12'
+            ];
+
+            return [
+                $months[$monthName] ?? null,
+                $year
+            ];
+        }
+
+        throw new \Exception("Format de période invalide pour le filtre '$filterName'. Valeur reçue : ".json_encode($value));
+    }
+    */
 
     public function generatePdf(AdminContext $context)
     {
         $report = $context->getEntity()->getInstance();
         $pdf = new ReportPdf();
-        $period = [$report->getStartDate()->format('F'),$report->getStartDate()->format('Y')];
+        $period = [$report->getStartDate()->format('F'), $report->getStartDate()->format('Y')];
 
-        $pdfContent = $pdf->generatePdf([$report],$period,'month');
+        $pdfContent = $pdf->generatePdf([$report], $period, 'month');
 
-        $response = new Response($pdfContent);
-        $response->headers->set('Content-Type', 'application/pdf');
-        $response->headers->set('Content-Disposition', 'attachment; filename="'.$pdf->generateFilename().'"');
-        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', '0');
-
-        return $response;
-
+        return new Response($pdfContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$pdf->generateFilename().'"'
+        ]);
     }
-    
+
     public function generatePdfPerYear(AdminContext $context)
     {
+        $entityManager = $this->container->get('doctrine')->getManagerForClass(Report::class);
 
-        $period = $context->getRequest()->query->get("filters")["Period"]["value"];
+        $period = $context->getRequest()->query->all()['filters']["Period"]['value'] ?? false;
+        if(!$period)
+        {
+            throw new \Exception("Période non valide.");
+        }
+
         $period = explode(" -> ",$period);
-        $reports = $this->entityManager->getRepository(Report::class)->findByPeriod($period[0],$period[1]);
+        $reports = $entityManager->getRepository(Report::class)->findByPeriod($period[0],$period[1]);
+
+        if (!$reports) {
+            throw new \Exception("Aucun rapport trouvé pour cette année fiscale.");
+        }
+
+        // Génération PDF
         $pdf = new ReportPdf();
         $pdfContent = $pdf->generatePdf($reports,$period,'year');
 
-        $response = new Response($pdfContent);
-        $response->headers->set('Content-Type', 'application/pdf');
-        $response->headers->set('Content-Disposition', 'attachment; filename="'.$pdf->generateFilename().'"');
-        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', '0');
-
-        return $response;
+        return new Response($pdfContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$pdf->generateFilename().'"'
+        ]);
     }
 
-    public function configureFields(string $pageName): iterable
+
+    public function scaleChangeForYear(AdminContext $context)
     {
-        $context = $this->container->get(AdminContextProvider::class)->getContext();
-        
-        yield FormField::addRow();
-        yield DateField::new('start_date','Period')
-        ->onlyOnIndex()
-        ->setFormat('MMMM y')
-        ;
-        
-        if($pageName == CRUD::PAGE_EDIT){
-            yield DateField::new('start_date','Date de début')->setFormTypeOptions(['attr' => ['class' => 'report_start_date']])->onlyOnForms()->hideWhenCreating();
-            yield DateField::new('end_date','Date de fin')->setFormTypeOptions(['attr' => ['class' => 'report_end_date']])->onlyOnForms()->hideWhenCreating();
-            yield CollectionField::new('lines','Trajet(s)')
-                ->setEntryType(ReportLineType::class)
-                ->allowDelete(true)
-                ->hideWhenCreating()
-                ->setFormTypeOptions(["attr" => ["class" => "lines"]])
-                ->hideOnIndex()
-            ;
+        $entityManager = $this->container->get('doctrine')->getManagerForClass(Report::class);
+
+        $periodFilter = $context->getRequest()->query->all()['filters']["Period"]['value'] ?? false;
+
+        if(!$periodFilter)
+        {
+            throw new \Exception("Période non valide.");
         }
 
-        if($pageName == CRUD::PAGE_NEW){
-            //yield DateField::new('validate_date','Date de validation');
-            yield DateField::new('Year','Année')->renderAsChoice()->onlyOnForms()->hideWhenUpdating()->setFormTypeOptions(["required" => true,'years' => range(date('Y')-4, date('Y')+1),]);
-            yield ChoiceField::new('Period','Mois')->setChoices(function (){
-                return ['Janvier' => 'January','Février' => 'February','Mars' => 'March','Avril' => 'April','Mai' => "May",'Juin' => 'June','Juillet' => 'July','Août' => 'August','Septembre' => 'September','Octobre' => "October",'Novembre' => 'November','Décembre' => "December"];
-            })->onlyOnForms()->hideWhenUpdating()->setFormTypeOptions(["required" => true]);
+        $period = explode(" -> ",$periodFilter);
+        $start = $period[0];
+        $end = $period[1];
+
+        $reports = $entityManager->getRepository(Report::class)->findByPeriod($start,$end);
+
+        if (!$reports) {
+            throw new \Exception("Aucun rapport trouvé pour cette année fiscale.");
         }
 
-        if($pageName == CRUD::PAGE_INDEX){
-            yield CollectionField::new('lines', 'Trajet(s)')->setTemplatePath('App/Report/lines.html.twig')->OnlyOnIndex();       
-            //yield CollectionField::new('vehiculesReports', 'Details')->setTemplatePath('App/Report/vehiculesReports.html.twig')->OnlyOnIndex();
-        }    
-  
-        yield FormField::addRow();
-        yield IntegerField::new('km','Distance totale (km)')
-            ->setFormTypeOptions(["attr" => ["readonly" => true,"class" => "km bg-light fw-bold"]])
-            ->hideWhenCreating()
-            ->hideOnIndex()
-            ->setColumns('col-3');
+        // Récupération du VR ciblé
+        $vrid = $context->getRequest()->query->get('vrid') ?? false;
+        $vehiculesReport = $entityManager->getRepository(VehiculesReport::class)->find($vrid);
 
+        if (!$vehiculesReport) {
+            throw new \Exception("Rapport introuvable.");
+        }
 
-        yield IntegerField::new('km','Distance')
-            ->setNumberFormat('%s'.' km')
-            ->onlyOnIndex()
-        ;
+        // Chargement des choix possibles
+        $choices = $this->getChoicesForVehiculeReport($vehiculesReport);
 
-        yield NumberField::new('total','Montant Total (€)')
-            ->setFormTypeOptions(["attr" => ["readonly" => true,"class" => "total bg-light fw-bold"]])
-            //->setHelp('Détails du calcul')
-            ->hideWhenCreating()
-            ->hideOnIndex()
-            ->setNumberFormat('%s'.' €')
-            ;
-            
-        yield NumberField::new('total','Montant')
-            ->setNumberFormat('%s'.' €')    
-            ->onlyOnIndex()
-            ;
+        $form = $this->createForm(ReportTotalScaleType::class, $vehiculesReport, [
+            'choices' => $choices
+        ]);
 
+        $form->handleRequest($context->getRequest());
+
+        if ($form->isSubmitted() && $form->isValid()) {
+
+            $vehiculesReport = $form->getData();
+            $newScale = $vehiculesReport->getScale();
+            $vehicle = $vehiculesReport->getVehicule();
+            $reportsToUpdate = [];
+
+            // Mise à jour de tous les rapports de l'année fiscale
+            foreach ($reports as $report) 
+            {
+                foreach ($report->getVehiculesReports() as $vr) 
+                {
+                    if ($vr->getVehicule() === $vehicle) {
+                        $vr->setScale($newScale);
+                        $reportsToUpdate[] = $report;
+                    }
+                }
+            }
+            $entityManager->flush();
+
+            //force le recalcul a posteriori des IK des rapports concernés selon nouveau barème
+            foreach($reportsToUpdate as $reportToUpdate)
+            {
+                $reportToUpdate->setUpdatedAt(new \DateTime());
+            }
+            $entityManager->flush();
+
+            $url = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::INDEX)
+                ->set("filters[Period][value]", $periodFilter)
+                ->generateUrl()
+                ;
+
+            return $this->redirect($url);
+        }
     }
 
-    public function configureFilters(Filters $filters): Filters
+
+    public function generateFooterLine(KeyValueStore $params, AdminContext $context)
     {
-        return $filters
-            ->add(ReportYearFilter::new('Period'))
-        ;
+        $paginator = $params->get('paginator');
+        $reports = $paginator->getResults();
+
+        $totals = ['km' => 0, 'amount' => 0];
+        $vehiculesTotals = [];
+
+        foreach ($reports as $report) {
+            $totals['km'] += $report->getVehiculesReportsTotalKm();
+            $totals['amount'] += $report->getVehiculesReportsTotalAmount();
+
+            foreach ($report->getVehiculesReports() as $vr) {
+                $vid = $vr->getVehicule()->getId();
+
+                if (!isset($vehiculesTotals[$vid])) {
+                    $vehiculesTotals[$vid] = [
+                        'Vehicule' => $vr->getVehicule(),
+                        'Scale' => $vr->getScale(),
+                        'Vr' => $vr,
+                        'km' => 0,
+                        'amount' => 0
+                    ];
+                }
+
+                $vehiculesTotals[$vid]['km'] += $vr->getKm();
+                $vehiculesTotals[$vid]['amount'] += $vr->getTotal();
+            }
+        }
+
+        /* Formulaires mis à jour */
+        foreach ($vehiculesTotals as $vid => $data) {
+
+            $vr = $data['Vr'];
+            $choices = $this->getChoicesForVehiculeReport($vr);
+
+            $form = $this->createForm(ReportTotalScaleType::class, $vr, [
+                'choices' => $choices,
+                'action' => $this->adminUrlGenerator
+                    ->setAction('scaleChangeForYear')
+                    ->set('vrid', $vr->getId())
+                    ->generateUrl()
+            ]);
+
+            $vehiculesTotals[$vid]['form'] = $form->createView();
+
+            /* Alertes mini + maxi */
+            if ($data['Scale']->getKmMax() > '') {
+                $kmMax = $data['Scale']->getKmMax();
+                $kmMin = $data['Scale']->getKmMin();
+
+                if ($data['km'] >= $kmMax) {
+                    $vehiculesTotals[$vid]['warning'] =
+                        'La distance totale dépasse celle du barème sélectionné';
+                }
+
+                if ($data['km'] <= $kmMin) {
+                    $vehiculesTotals[$vid]['info'] =
+                        'La distance totale est actuellement en-dessous du seuil du barème sélectionné';
+                }
+            }
+        }
+
+        $params->set('totals', $totals);
+        $params->set('vehiculesTotals', $vehiculesTotals);
+
+        return $params;
     }
 
     public function duplicateReport(
@@ -331,31 +440,33 @@ class ReportAppCrudController extends AbstractCrudController
         Request $request,
         EntityManagerInterface $em,
         FormFactoryInterface $formFactory,
-        AdminUrlGenerator $adminUrlGenerator,
+        \EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator $adminUrlGenerator,
         ValidatorInterface $validator
     ): Response {
         /** @var Report $original */
         $original = $context->getEntity()->getInstance();
-    
-        $form = $formFactory->create(ReportDuplicateType::class);
+        $defaultData = [
+            'year' => $original->getStartDate()->format('Y')
+        ];
+
+        $form = $formFactory->create(ReportDuplicateType::class, $defaultData);
         $form->handleRequest($request);
-    
+
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
             $year = $data['year'];
             $month = $data['month'];
-    
-            $startDate = new \DateTimeImmutable("$year-$month-01");
-            $endDate = $startDate->modify('last day of this month');
-    
-            $newReport = new Report();
-            $newReport->setStartDate($startDate);
-            $newReport->setEndDate($endDate);
-            $newReport->setUser($original->getUser());
 
-            // Valider le rapport avant persist
-            $errors = $validator->validate($newReport, new NewReport());
+            $start = new \DateTimeImmutable("$year-$month-01");
+            $end = $start->modify('last day of this month');
 
+            $new = new Report();
+            $new->setStartDate($start);
+            $new->setEndDate($end);
+            $new->setUser($original->getUser());
+
+            /* Validation */
+            $errors = $validator->validate($new, new NewReport());
             if (count($errors) > 0) {
                 return $this->render('App/Report/duplicate_form.html.twig', [
                     'form' => $form->createView(),
@@ -364,11 +475,14 @@ class ReportAppCrudController extends AbstractCrudController
                 ]);
             }
 
-            $em->persist($newReport);
+            $em->persist($new);
             $em->flush();
-    
+
+            /* Clone des lignes */
             foreach ($original->getLines() as $line) {
+
                 $newLine = new ReportLine();
+               // dd($original->getLines());
                 $newLine->setKm($line->getKm());
                 $newLine->setIsReturn($line->getIsReturn());
                 $newLine->setKmTotal($line->getKmTotal());
@@ -378,25 +492,32 @@ class ReportAppCrudController extends AbstractCrudController
                 $newLine->setComment($line->getComment());
                 $newLine->setVehicule($line->getVehicule());
                 $newLine->setScale($line->getScale());
-    
-                $adjustedDate = $line->getTravelDate()
-                    ->setDate($year, $month, min($line->getTravelDate()->format('d'), $endDate->format('d')));
-                $newLine->setTravelDate($adjustedDate);
-    
-                $newLine->setReport($newReport);
+
+                /* Ajustement de la date */
+                $adjusted = $line->getTravelDate()
+                    ->setDate(
+                        $year,
+                        $month,
+                        min($line->getTravelDate()->format('d'), $end->format('d'))
+                    );
+
+                $newLine->setTravelDate($adjusted);
+                $newLine->setReport($new);
+
                 $em->persist($newLine);
                 $em->flush();
             }
-    
+
+            /* Redirection vers EDIT du report dupliqué */
             $url = $adminUrlGenerator
                 ->setController(self::class)
                 ->setAction(Action::EDIT)
-                ->setEntityId($newReport->getId())
+                ->setEntityId($new->getId())
                 ->generateUrl();
-    
+
             return $this->redirect($url);
         }
-    
+
         return $this->render('App/Report/duplicate_form.html.twig', [
             'form' => $form->createView(),
             'original' => $original,
@@ -409,194 +530,194 @@ class ReportAppCrudController extends AbstractCrudController
 
         $rows = [];
         foreach ($report->getLines() as $line) {
-
             $rows[] = [
-                'Véhicule'      => $line->getVehicule(),
-                'Date'      => $line->getTravelDate()->format('d/m/Y'),
-                'Départ'     => $line->getStartAdress(),
+                'Véhicule' => $line->getVehicule(),
+                'Date' => $line->getTravelDate()->format('d/m/Y'),
+                'Départ' => $line->getStartAdress(),
                 'Arrivé' => $line->getEndAdress(),
-                'Motif'     => str_replace('<br />', '\n', $line->getComment()),
-                'Distance'   => $line->getKmTotal(),
+                'Motif' => str_replace('<br />', '\n', $line->getComment()),
+                'Distance' => $line->getKmTotal(),
             ];
         }
 
-        $slug = $this->slugger->slug($report->getUser() . '_' . $report->getStartDate()->format('m-Y'))->lower();
-        $fileName = sprintf('Fiche_kilometrique_%s.xlsx', $slug);
+        $slug = $this->slugger->slug(
+            $report->getUser().'_'.$report->getStartDate()->format('m-Y')
+        )->lower();
 
+        $fileName = sprintf('Fiche_kilometrique_%s.xlsx', $slug);
 
         return $this->exporter->export($rows, $fileName, 'xlsx');
     }
 
-    public function getRedirectResponseAfterSave(AdminContext $context, string $action): RedirectResponse
+    public function configureFilters(Filters $filters): Filters
     {
-        if(isset($context->getRequest()->request->all()['ea'])){
-            
-            return parent::getRedirectResponseAfterSave($context, $action);
+        return $filters
+            ->add(\App\Controller\App\Filter\ReportYearFilter::new('Period'));
+    }
 
-        }else{
-            $context->getRequest()->setMethod('PATCH');
-    
+    public function configureFields(string $pageName): iterable
+    {
+        yield FormField::addRow();
+
+        yield DateField::new('start_date', 'Period')
+            ->onlyOnIndex()
+            ->setFormat('MMMM y');
+
+        if ($pageName === Crud::PAGE_EDIT) {
+
+            yield DateField::new('start_date', 'Date de début')
+                ->setFormTypeOptions(['attr' => ['class' => 'report_start_date']])
+                ->onlyOnForms()
+                ->hideWhenCreating();
+
+            yield DateField::new('end_date', 'Date de fin')
+                ->setFormTypeOptions(['attr' => ['class' => 'report_end_date']])
+                ->onlyOnForms()
+                ->hideWhenCreating();
+
+            yield CollectionField::new('lines', 'Trajet(s)')
+                ->setEntryType(ReportLineType::class)
+                ->allowDelete(true)
+                ->hideWhenCreating()
+                ->setFormTypeOptions(['attr' => ['class' => 'lines']])
+                ->hideOnIndex();
+        }
+
+        if ($pageName === Crud::PAGE_NEW) {
+
+            yield DateField::new('Year', 'Année')
+                ->renderAsChoice()
+                ->onlyOnForms()
+                ->hideWhenUpdating()
+                ->setFormTypeOptions([
+                    'required' => true,
+                    'years' => range(date('Y') - 4, date('Y') + 1),
+                ]);
+
+            yield ChoiceField::new('Period', 'Mois')
+                ->setChoices([
+                    'Janvier' => 'January',
+                    'Février' => 'February',
+                    'Mars' => 'March',
+                    'Avril' => 'April',
+                    'Mai' => 'May',
+                    'Juin' => 'June',
+                    'Juillet' => 'July',
+                    'Août' => 'August',
+                    'Septembre' => 'September',
+                    'Octobre' => 'October',
+                    'Novembre' => 'November',
+                    'Décembre' => 'December'
+                ])
+                ->onlyOnForms()
+                ->hideWhenUpdating()
+                ->setFormTypeOptions(['required' => true]);
+        }
+
+        if ($pageName === Crud::PAGE_INDEX) {
+            yield CollectionField::new('lines', 'Trajet(s)')
+                ->setTemplatePath('App/Report/lines.html.twig')
+                ->onlyOnIndex();
+        }
+
+        yield FormField::addRow();
+
+        yield IntegerField::new('km', 'Distance totale (km)')
+            ->setFormTypeOptions(['attr' => [
+                'readonly' => true,
+                'class' => 'km bg-light fw-bold'
+            ]])
+            ->hideWhenCreating()
+            ->hideOnIndex()
+            ->setColumns('col-3');
+
+        yield IntegerField::new('km', 'Distance')
+            //->setNumberFormat('%s km')
+            ->onlyOnIndex();
+
+        yield NumberField::new('total', 'Montant Total (€)')
+            ->setFormTypeOptions(['attr' => [
+                'readonly' => true,
+                'class' => 'total bg-light fw-bold'
+            ]])
+            ->hideWhenCreating()
+            ->hideOnIndex()
+            ->setNumberFormat('%s €');
+
+        yield MoneyField::new('total', 'Montant')
+            ->setCurrency('EUR')
+            
+            ->setStoredAsCents(false)
+            ->onlyOnIndex();
+    }
+
+    public function delete(AdminContext $context)
+    {
+        /** @var Report $report */
+        $report = $context->getEntity()->getInstance();
+        $entityManager = $this->container->get('doctrine')->getManagerForClass(Report::class);
+       
+        $reportYear = $report->getStartDate()->format('Y');
+        $currentYear = (new \DateTime())->format('Y');
+        $user = $report->getUser();
+
+        try {
+            parent::delete($context);
+        } catch (\Exception $e) {
+            // gérer l'erreur si la suppression échoue
+            throw $e;
+        }
+
+        $remainingReports = $entityManager->getRepository(Report::class)
+            ->createQueryBuilder('r')
+            ->select('count(r.id)')
+            ->where('r.user = :user')
+            ->andWhere('YEAR(r.start_date) = :year')
+            ->setParameter('user', $user)
+            ->setParameter('year', $reportYear)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        if ($reportYear !== $currentYear && $remainingReports == 0) {
+            $targetPeriod = "Jan $currentYear -> Dec $currentYear";
+
+            // On génère l'URL vers l'index de l'année courante
             $url = $this->adminUrlGenerator
-                ->setAction(Action::EDIT)
-                ->setEntityId($context->getEntity()->getPrimaryKeyValue())
-                ->generateUrl();
-    
-            die($url);
-        }
-    }
-
-    public function generateFooterLine(KeyValueStore $responseParameters, AdminContext $context) 
-    {
-        $paginator = $responseParameters->get('paginator');
-        $reports = $paginator->getResults();
-        $totals = ['km' => 0, 'amount' => 0];
-        $vehiculesTotals = [];
-        
-        foreach ($reports as $report) 
-        {
-            $totals['km'] += $report->getVehiculesReportsTotalKm();
-            $totals['amount'] += $report->getVehiculesReportsTotalAmount();
-            foreach ($report->getVehiculesReports() as $vr) 
-            {
-                $vid = $vr->getVehicule()->getId();
-                if(isset($vehiculesTotals[$vid])){
-                    $vehiculesTotals[$vid]['km'] += $vr->getKm();
-                    $vehiculesTotals[$vid]['amount'] += $vr->getTotal();
-                        
-                }else{
-                    $vehiculesTotals[$vid]['Vehicule'] = $vr->getVehicule();
-                    $vehiculesTotals[$vid]['Scale'] = $vr->getScale();
-                    $vehiculesTotals[$vid]['Vr'] = $vr;
-                    $vehiculesTotals[$vid]['km'] = $vr->getKm();
-                    $vehiculesTotals[$vid]['amount'] = $vr->getTotal();
-                }
-            }
-        }
-        // echo $vehiculesTotals["34"]['Scale'];
-        foreach ($vehiculesTotals as $vid => $v) 
-        {
-            $vehiculesReport = $v['Vr'];
-            $vehiculesReport->setScale($vehiculesTotals[$vid]['Scale']);
-            $vehiculesReport->setVehicule($vehiculesTotals[$vid]['Vehicule']);
-            $final_choices = $this->getChoicesForVehiculeReport($vehiculesReport);
-
-            $referrer = $this->container->get(AdminUrlGenerator::class)
+                ->setController(self::class)
                 ->setAction(Action::INDEX)
-                ->set('filters', $context->getRequest()->query->get("filters"))
-                ->generateUrl()
-            ;
+                ->set('filters[Period][value]', $targetPeriod)
+                // on supprime le referrer : empêche que EasyAdmin renvoye sur l'ID qui n'existe plus
+                ->unset('referrer')
+                ->setEntityId(null) 
+                ->generateUrl();
 
-            $form = $this->createForm(ReportTotalScaleType::class, $vehiculesReport, [
-                'choices' => $final_choices,
-                'action' => $this->container->get(AdminUrlGenerator::class)
-                        ->setAction('scaleChangeForYear')
-                        ->set('vrid', $vehiculesReport->getId())
-                        ->setReferrer($referrer)
-                        ->generateUrl()
-            ]);
-
-            $this->formChangeScale[] = $form;
-
-            $vehiculesTotals[$vid]['form'] = $form->createView();   
-            
-            $valueKmMax = 0;
-            if($vehiculesTotals[$vid]['Scale']->getKmMax() > ''){
-                $valueKmMax = $vehiculesTotals[$vid]['Scale']->getKmMax();
-                $valueKmMin = $vehiculesTotals[$vid]['Scale']->getKmMin();
-
-                if($vehiculesTotals[$vid]['km'] >= $valueKmMax){
-                    //show warning alert option choisie plus/non valide
-                    $vehiculesTotals[$vid]['warning'] = 'La distance totale dépasse celle du barème sélectionné';
-                }
-
-                if($vehiculesTotals[$vid]['km'] <= $valueKmMin) {
-                    //show warning alerte pas assez de km parcouru
-                    $vehiculesTotals[$vid]['info'] = 'La distance totale est actuellement en-dessous du seuil du barème sélectionné';
-                }
-            }
+            return $this->redirect($url);
         }
-        $parameters = [
-            'totals' => $totals,
-            'vehiculesTotals' => $vehiculesTotals,
-        ];
 
-        $responseParameters->setAll($parameters);
-
-        return $responseParameters;
-    }
-
-    public function scaleChangeForYear(AdminContext $context,ManagerRegistry $doctrine) 
-    {
-
-        $entityManager = $doctrine->getManager();
-
-        $period = $context->getRequest()->query->get("filters")["Period"]["value"] ?? false;
-        $vrid = $context->getRequest()->query->get("vrid") ?? false;
-
-        $vehiculesReport = $this->entityManager->getRepository(VehiculesReport::class)->find($vrid);
-        $period = explode(" -> ",$period);
-        $start = $period[0];
-        $end = $period[1];
-
-        $reports = $this->entityManager->getRepository(Report::class)->findByPeriod($start,$end);
-
-        $final_choices = $this->getChoicesForVehiculeReport($vehiculesReport);
-
-        $form = $this->createForm(ReportTotalScaleType::class, $vehiculesReport, ['choices' => $final_choices]);
-
-        $form->handleRequest($context->getRequest());
-
-        if ($form->isSubmitted() && $form->isValid()) {
-
-            $vehiculesReport = $form->getData();
-
-            $scale = $vehiculesReport->getScale();
-            $vehicule = $vehiculesReport->getVehicule();
-            
-            foreach ($reports as $report) {
-                
-                $report->setScale($scale);
-                
-                foreach ($report->getVehiculesReports() as $vr) {
-                    if ($vr->getVehicule() == $vehicule) {
-                        $report->setUpdatedAt(new \DateTime());
-                        $vr->setScale($scale);
-                        $entityManager->persist($vr);                        
-                        //$this->entityManager->persist($report);                        
-                    }
-                }
-            }
-            $entityManager->flush();
-            if (null !== $referrer = $context->getReferrer()) {
-                return $this->redirect($referrer);
-            }else{
-                $url = $this->container->get(AdminUrlGenerator::class)->setAction(Action::INDEX)->generateUrl();
-                return $this->redirect($url);
-            }
-        }
-        
+        return $this->redirect($this->adminUrlGenerator
+            ->setAction(Action::INDEX)
+            ->unset('referrer')
+            ->generateUrl()
+        );
     }
 
     public function getChoicesForVehiculeReport(VehiculesReport $vehiculesReport)
     {
-        foreach($vehiculesReport->getVehicule()->getPower()->getScales() as $s)
-        {
-            //Attention: même si le barème est ancien, il faut le laisser pour éviter de le changer en cours d'année fiscale si souhaité
-            if($vehiculesReport->getScale()->getYear() == $s->getYear()){
-                $powerString = $s->getPower()->__toString().' ('.$s->getYear().')';
-                $choices[(string) $powerString][(string) $s->__toString()] = $s;
-            }
+        $choices = [];
 
-            //si le barème sort en cours d'année, on peut l'appliquer pour toute l'année fiscale
-            if($vehiculesReport->getVehicule()->getScale()->getYear() == $s->getYear()){
-                $powerString = $s->getPower()->__toString().' ('.$s->getYear().')';
-                $choices[(string) $powerString][(string) $s->__toString()] = $s;
+        foreach ($vehiculesReport->getVehicule()->getPower()->getScales() as $scale) {
+
+            // On affiche toutes les versions valides du barème dans l'année fiscale
+            if (
+                $vehiculesReport->getScale()->getYear() == $scale->getYear()
+                || $vehiculesReport->getVehicule()->getScale()->getYear() == $scale->getYear()
+            ) {
+                $powerLabel = (string) $scale->getPower() . ' (' . $scale->getYear() . ')';
+                $choices[$powerLabel][$scale->__toString()] = $scale;
             }
         }
 
         ksort($choices);
-
         return $choices;
     }
-
 }

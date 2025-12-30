@@ -4,10 +4,8 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Payum\Core\Model\Token;
 
-/**
- * @ORM\Entity
- * @ORM\Table
- */
+#[ORM\Table]
+#[ORM\Entity]
 class PaymentToken extends Token
 {
    

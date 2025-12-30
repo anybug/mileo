@@ -6,7 +6,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Guard\GuardAuthenticatorHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -16,6 +15,8 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
+use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 use App\Form\ResetPasswordFormType;
 use App\Form\ResetPasswordRequestFormType;
@@ -27,8 +28,12 @@ use App\Entity\Purchase;
 use App\Form\ReCaptchaType;
 use App\Entity\Subscription;
 use App\Form\RegistrationType;
-use App\Security\LoginFormAuthenticator;
-use App\Security\LoginFormAuthenticatorPayment;
+use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
+use App\Security\LoginAuthenticator;
+
+use App\Event\UserFirstLoginEvent;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+
 
 class SecurityController extends AbstractController
 {
@@ -36,7 +41,7 @@ class SecurityController extends AbstractController
     /**
      * Registration
      */
-    public function registration(SessionInterface $session, Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher, LoginFormAuthenticator $login,GuardAuthenticatorHandler $guard) 
+    public function registration(SessionInterface $session, Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher, EventDispatcherInterface $eventDispatcher,  LoginAuthenticator $loginAuthenticator, UserAuthenticatorInterface $userAuthenticator) 
     {
         if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
             return $this->redirectToRoute('app');
@@ -49,43 +54,28 @@ class SecurityController extends AbstractController
         $form->handleRequest($request);
   
         if($form->isSubmitted() && $form->isValid()) {
-            //Manage free subscription upon first registration
-            $subscription = new Subscription();
-            $plan = $manager->getRepository(Plan::class)->findOneBy(['price_per_year' => 0]);
-            $subscription->setPlan($plan);
-            $subscription->setUser($user);
-            $subscription->setSubscriptionStart(new \DateTime());
-            $subscription->setSubscriptionEnd(new \DateTime('+'.$plan->getPlanPeriod().' month'));
-
-
-            //Manage a free order object
-            $order = new Order();
-            $order->setUser($user);
-            $order->setPlan($plan);
-            $order->setCreatedAt(new \DateTime());
-            $order->setUpdatedAt(new \DateTime());
-            $order->setProductName($plan->getName());
-            $order->setProductDescription($plan->getPlanDescription());
-            $order->setVatAmount($plan->getTotalCost());
-            $order->setTotalHt($plan->getTotalCost());
-            $order->setSubscriptionEnd($subscription->getSubscriptionEnd());
-            $order->setStatus("new");
-
-            $manager->persist($order);
-
-            //Manage user object before registration
-            $user->setSubscription($subscription);
-            $user->setUsername($user->getEmail());
+         
+            $user->setEmail($user->getEmail());
             $user->setRoles(["ROLE_USER"]);
             $hash = $passwordHasher->hashPassword($user, $user->getPassword());
             $user->setPassword($hash);
             $manager->persist($user);
             $manager->flush();
+
+            $eventDispatcher->dispatch(
+                new UserFirstLoginEvent($user)
+            );
+                
             //Redirect to home and autologin after registration
             $session->set('registration', true);
             //$this->addFlash('success', "Votre compte avec l'abonnement ". $session->get('subscriptionPlan')->getName() ." a bien été créé");
 
-            return $guard->authenticateUserAndHandleSuccess($user, $request, $login, 'main');
+            return $userAuthenticator->authenticateUser(
+                $user,
+                $loginAuthenticator,
+                $request
+            );
+
 
             //return $this->redirectToRoute('home');
         }    
@@ -131,7 +121,7 @@ class SecurityController extends AbstractController
 
         if($form->isSubmitted() && $form->isValid()){
             //On va chercher l'utilisateur par son email
-            $user = $usersRepository->findOneBy(array('email' => $form->get('email')->getData()));
+            $user = $usersRepository->findOneBy(['email' => $form->get('email')->getData()]);
 
             // On vérifie si on a un utilisateur
             if($user){
@@ -179,7 +169,7 @@ class SecurityController extends AbstractController
     ): Response
     {
         // On vérifie si on a ce token dans la base
-        $user = $usersRepository->findOneBy(array('resetToken' => $token));
+        $user = $usersRepository->findOneBy(['resetToken' => $token]);
         
         // On vérifie si l'utilisateur existe
 
@@ -215,5 +205,18 @@ class SecurityController extends AbstractController
         // Si le token est invalide on redirige vers le login
         $this->addFlash('danger', 'Lien invalide - Invalid token');
         return $this->redirectToRoute('security_login');
+    }
+
+    #[Route('/connect/google', name: 'connect_google_start')]
+    public function connectGoogle(ClientRegistry $clientRegistry): RedirectResponse
+    {
+        return $clientRegistry
+            ->getClient('google')
+            ->redirect(['openid', 'profile', 'email'],
+            [
+                'prompt' => 'consent select_account', // <- force l’écran de choix de compte
+                // 'access_type' => 'offline', // optionnel
+                // 'include_granted_scopes' => 'true', // optionnel
+            ]);
     }
 }    

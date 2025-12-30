@@ -13,75 +13,55 @@ use Doctrine\Common\Collections\Collection;
 use App\Validator\Constraints as AppAssert;
 use Doctrine\Common\Collections\Criteria;
 
-/**
- * @ORM\Entity(repositoryClass=ReportRepository::class)
- * @AppAssert\NewReport(groups={"new"})
- * @AppAssert\Report(groups={"edit"})
- */
+#[ORM\Entity(repositoryClass: ReportRepository::class)]
+#[AppAssert\NewReport(groups: ["new"])]
+#[AppAssert\Report(groups: ["edit"])]
 class Report
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=User::class, inversedBy="reports")
-     * @ORM\JoinColumn(nullable=false)
-     */
+    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'reports')]
     private $user;
 
     private $scale;
 
-    /**
-     * @ORM\Column(type="date")
-     */
+    #[ORM\Column(type: 'date')]
     private $start_date;
 
-    /**
-     * @ORM\Column(type="date")
-     */
+    #[ORM\Column(type: 'date')]
     private $end_date;
 
-    /**
-     * @ORM\Column(type="date", nullable=true)
-     */
+    #[ORM\Column(type: 'date', nullable: true)]
     private $validate_date;
 
-    /**
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Column(type: 'integer')]
     private $km;
 
-    /**
-     * @ORM\Column(type="decimal", precision=8, scale=2)
-     */
+    #[ORM\Column(type: 'decimal', precision: 8, scale: 2)]
     private $total;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
+    #[ORM\Column(type: 'datetime')]
     private $created_at;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
+    #[ORM\Column(type: 'datetime')]
     private $updated_at;
 
     /**
-    * @ORM\OneToMany(targetEntity=ReportLine::class, orphanRemoval=true, cascade={"persist", "remove"}, mappedBy="report")
-    * @var \Doctrine\Common\Collections\Collection
-    */
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    #[ORM\OneToMany(targetEntity: ReportLine::class, orphanRemoval: true, cascade: ['persist', 'remove'], mappedBy: 'report')]
     private $lines;
 
     private $year;
 
     /**
-     * @ORM\OneToMany(targetEntity=VehiculesReport::class, orphanRemoval=true, cascade={"persist", "remove"}, mappedBy="report")
      * @var \Doctrine\Common\Collections\Collection
      */
+    #[ORM\OneToMany(targetEntity: VehiculesReport::class, orphanRemoval: true, cascade: ['persist', 'remove'], mappedBy: 'report')]
     private $vehiculesReports;
 
     /**

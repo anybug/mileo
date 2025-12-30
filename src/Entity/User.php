@@ -10,131 +10,83 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityNotFoundException;
 
-/**
- * @ORM\Entity(repositoryClass=UserRepository::class)
- * @ORM\HasLifecycleCallbacks
- * @UniqueEntity(fields="email", message="Cette adresse e-mail est déjà utilisée")
- */
-class User implements UserInterface
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\HasLifecycleCallbacks]
+#[UniqueEntity(fields: 'email', message: 'Cette adresse e-mail est déjà utilisée')]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\Email(message="Adresse e-mail non valide")
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\Email(message: 'Adresse e-mail non valide')]
     private $email;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * 
-     */
-    private $username;
-
-    /**
-     * @ORM\Column(type="string", length=100, nullable=true)
-     * 
-     */
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private $resetToken;
 
-    /**
-     * @ORM\Column(type="datetime", nullable=true)
-     */
+    #[ORM\Column(type: 'datetime', nullable: true)]
     private $last_login;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
+    #[ORM\Column(type: 'datetime')]
     private $created_at;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
+    #[ORM\Column(type: 'datetime')]
     private $updated_at;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\Regex(pattern="/^\S*(?=\S{7,})(?=\S*[a-z])(?=\S*[A-Z])(?=\S*[\d])\S*$/",
-     * message="Merci de saisir un mot de passe plus sécurisé")
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\Regex(pattern: '/^\S*(?=\S{7,})(?=\S*[a-z])(?=\S*[A-Z])(?=\S*[\d])\S*$/', message: 'Merci de saisir un mot de passe plus sécurisé')]
     private $password;
 
-    /**
-     * @Assert\Regex(pattern="/^\S*(?=\S{7,})(?=\S*[a-z])(?=\S*[A-Z])(?=\S*[\d])\S*$/",
-     * message="Merci de saisir un mot de passe plus sécurisé")
-     */
+    #[Assert\Regex(pattern: '/^\S*(?=\S{7,})(?=\S*[a-z])(?=\S*[A-Z])(?=\S*[\d])\S*$/', message: 'Merci de saisir un mot de passe plus sécurisé')]
     private $plainPassword;
     
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private $google_id;
 
-    /**
-    * @Assert\EqualTo(propertyPath="password", message="Les mots de passe ne correspondent pas")
-    */
+    #[ORM\Column(type: 'string', length: 20)]
+    private string $authProvider = 'local'; 
+
+    #[Assert\EqualTo(propertyPath: 'password', message: 'Les mots de passe ne correspondent pas')]
     public $confirm_password;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private $first_name;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private $last_name;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private $company;
 
-    /**
-     * @ORM\Column(type="string", length=20, nullable=true)
-     * 
-     */
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private $balanceStartPeriod;
 
-    /**
-     * @ORM\Column(type="array", nullable=true)
-     */
-    private $roles = [];
+    #[ORM\Column(type: 'json')]
+    private array $roles = [];
 
     public $captcha;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Vehicule::class, mappedBy="user",cascade={"persist", "remove"})
-     */
+    #[ORM\OneToMany(targetEntity: Vehicule::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private $vehicules;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Report::class, mappedBy="user",cascade={"persist", "remove"})
-     */
+    #[ORM\OneToMany(targetEntity: Report::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private $reports;
 
-    /**
-     * @ORM\OneToOne(targetEntity=Subscription::class, mappedBy="user",cascade={"persist", "remove"})
-     */
+    #[ORM\OneToOne(targetEntity: Subscription::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private $subscription;
 
-    /**
-     * @ORM\OneToMany(targetEntity=Order::class, mappedBy="user",cascade={"persist", "remove"})
-     */
+    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private $orders;
 
-    /**
-     * @ORM\OneToMany(targetEntity=UserAddress::class, mappedBy="user", orphanRemoval=true, cascade={"persist", "remove"})
-     */
+    #[ORM\OneToMany(targetEntity: UserAddress::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist', 'remove'])]
     private $userAddresses;
 
     const PERIOD_JANUARY = 'January';
@@ -193,11 +145,6 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getUsername(): ?string
-    {
-        return $this->username;
-    }
-
     /**
      * A visual identifier that represents this user.
      *
@@ -205,16 +152,9 @@ class User implements UserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->username;
+        return (string) $this->email;
     }
-
-    public function setUsername(?string $username): self
-    {
-        $this->username = $username;
-
-        return $this;
-    }
-
+    
     public function getPassword(): ?string
     {
         return $this->password;
@@ -275,9 +215,16 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getRoles(): ?array
+    /**
+     * @see UserInterface
+     */
+    public function getRoles(): array
     {
-        return $this->roles;
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
     }
 
     public function setRoles(?array $roles): self
@@ -518,7 +465,7 @@ class User implements UserInterface
         ];
     }
 
-    public function getFormattedBalancePeriod($period = array())
+    public function getFormattedBalancePeriod($period = [])
     {
         if($period){
             //$value = $period['startMonth'] ." ".$period['prevYear']." -> ".$period['endMonth']." ".$period['nextYear'];
@@ -529,7 +476,7 @@ class User implements UserInterface
         return false;
     }
 
-    public function getTranslattedBalancePeriod($period = array())
+    public function getTranslattedBalancePeriod($period = [])
     {
         if($period){
             $fmt = new \IntlDateFormatter(
@@ -678,16 +625,26 @@ class User implements UserInterface
         return $this;
     }
 
-    /**
-     * @ORM\PrePersist
-     * @ORM\PreUpdate
-    */
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
     public function updatedTimestamps(): void
     {
         $this->setUpdatedAt(new \DateTime('now'));    
         if ($this->getCreatedAt() === null) {
             $this->setCreatedAt(new \DateTime('now'));
         }
+    }
+
+    public function getAuthProvider(): ?string
+    {
+        return $this->authProvider;
+    }
+
+    public function setAuthProvider(string $authProvider): static
+    {
+        $this->authProvider = $authProvider;
+
+        return $this;
     }
 
 }

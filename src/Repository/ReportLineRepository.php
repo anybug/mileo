@@ -16,7 +16,7 @@ use Symfony\Component\Security\Core\Security;
 class ReportLineRepository extends ServiceEntityRepository
 {
     private $security;
-    
+
     public function __construct(ManagerRegistry $registry, Security $security)
     {
         $this->security = $security;
@@ -47,7 +47,7 @@ class ReportLineRepository extends ServiceEntityRepository
             ->getOneOrNullResult()
         ;
     }
-    
+
     public function getLineForReports($reports)
     {
         return $this->createQueryBuilder('r')

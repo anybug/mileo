@@ -69,7 +69,6 @@ class ReportListener
         }
         foreach($entity->getVehicules() as $vehicule)
         {
-
             $reportVehicule = new VehiculesReport;
             $entity->addVehiculesReport($reportVehicule);
             $reportVehicule->setVehicule($vehicule);
@@ -91,7 +90,7 @@ class ReportListener
             $entity->calculateKm();
             $entity->calculateTotal();
 
-            $em->persist($entity);
+            //$em->persist($entity);
             
         }
 

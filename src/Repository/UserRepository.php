@@ -16,13 +16,13 @@ use Symfony\Component\Security\Core\Security;
 class UserRepository extends ServiceEntityRepository
 {
     private $security;
-    
+
     public function __construct(ManagerRegistry $registry, Security $security)
     {
         $this->security = $security;
         parent::__construct($registry, User::class);
     }
-    
+
     public function dashboardQuery()
     {
         return $this->createQueryBuilder('u')

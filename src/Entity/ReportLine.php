@@ -7,89 +7,61 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * @ORM\Entity(repositoryClass=ReportLineRepository::class)
- */
+#[ORM\Entity(repositoryClass: ReportLineRepository::class)]
 class ReportLine
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Report::class, inversedBy="lines", cascade={"persist"})
-     */
+    #[ORM\ManyToOne(targetEntity: Report::class, inversedBy: 'lines', cascade: ['persist'])]
     private $report;
 
-    /**
-     * @ORM\ManyToOne(targetEntity=Vehicule::class, inversedBy="reportlines")
-     * @ORM\JoinColumn(nullable=false)
-     */
+    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Vehicule::class, inversedBy: 'reportlines')]
     private $vehicule;
 
     private $scale;
 
     private $favories;
 
-    /**
-     * @ORM\Column(type="date")
-     * @Assert\NotBlank
-     * @Assert\Type("\DateTimeInterface")
-     */
+    #[ORM\Column(type: 'date')]
+    #[Assert\NotBlank]
+    #[Assert\Type('\DateTimeInterface')]
     private $travel_date;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
     private $startAdress;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
     private $endAdress;
 
-    /**
-     * @ORM\Column(type="integer", nullable=true)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'integer', nullable: true)]
+    #[Assert\NotBlank]
     private $km;
 
-    /**
-     * @ORM\Column(type="boolean")
-     */
+    #[ORM\Column(type: 'boolean')]
     private $is_return;
 
-    /**
-     * @ORM\Column(type="integer")
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'integer')]
+    #[Assert\NotBlank]
     private $km_total;
     
-    /**
-     * @ORM\Column(type="decimal", precision=8, scale=2)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'decimal', precision: 8, scale: 2)]
+    #[Assert\NotBlank]
     private $amount;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\NotBlank]
     private $comment;
     
-    /**
-     * @ORM\Column(type="datetime")
-     */
+    #[ORM\Column(type: 'datetime')]
     private $created_at;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
+    #[ORM\Column(type: 'datetime')]
     private $updated_at;
 
     public function getId(): ?int
@@ -219,7 +191,6 @@ class ReportLine
 
     public function calculateAmount()
     {
-        $amount=0;
         $amount = ($this->getScale()->getRate()*$this->getKmTotal()) /*+ ($this->getScale()->getAmount()/12*)*/;
         $amount = round($amount, 2);
         $this->setAmount($amount);

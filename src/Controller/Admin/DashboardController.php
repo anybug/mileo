@@ -25,16 +25,14 @@ class DashboardController extends AbstractDashboardController
         $this->easyAdminDashboard = $easyAdminDashboard;
     }
 
-    /**
-     * @Route("/admin", name="admin")
-     */
+    #[Route(path: '/admin', name: 'admin')]
     public function index(): Response
     {
         //return parent::index();
-        return $this->render('@EasyAdminDashboard/Default/index.html.twig', array(
+        return $this->render('@EasyAdminDashboard/Default/index.html.twig', [
             'dashboard' => $this->easyAdminDashboard->generateDashboardValues(),
             'layout_template_path' => $this->easyAdminDashboard->getLayoutTemplate()
-        ));
+        ]);
     }
 
     public function configureDashboard(): Dashboard
@@ -42,8 +40,6 @@ class DashboardController extends AbstractDashboardController
         return Dashboard::new()
             ->setTitle('Mileo');
     }
-
-
 
     public function configureMenuItems(): iterable
     {

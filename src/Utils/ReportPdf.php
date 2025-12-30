@@ -33,21 +33,60 @@ class ReportPdf extends TCPDF
     {
         $reports = $this->getReports();
         $entity = $reports[0];
-        //format par année ou par mois
-        if($this->type == 'year'){
-            $fromArray = explode(' ',$this->period[0]); // mois année
-            $toArray = explode(' ',$this->period[1]); // mois année
 
-            $from = $this->translateMonth($fromArray[0]) . '_' . $this->translateMonth($toArray[0]); //mois
-            $to = $toArray[1]; //année
-        }else{
-            $from = $this->translateMonth($this->period[0]); //mois
-            $to = $this->period[1]; //année
+        // Cas PDF annuel
+        if ($this->type === 'year') {
+
+            // Cas 1 : période = ["2025"]
+            if (count($this->period) === 1) {
+                $year = $this->period[0];
+                return sprintf(
+                    'Fiche_kilometrique_%s_annee_%s.pdf',
+                    $entity->getUser(),
+                    $year
+                );
+            }
+
+            // Cas 2 : période = ["Jan 2025", "Dec 2025"]
+            if (count($this->period) === 2) {
+
+                // On convertit "Jan 2025" → DateTime
+                $from = \DateTime::createFromFormat('M Y', $this->period[0]);
+                $to   = \DateTime::createFromFormat('M Y', $this->period[1]);
+
+                if (!$from || !$to) {
+                    throw new \Exception("Format de période annuel invalide : ".json_encode($this->period));
+                }
+
+                $fromMonth = $this->translateMonth($from->format('F'));  // janvier
+                $toMonth   = $this->translateMonth($to->format('F'));    // décembre
+                $year      = $to->format('Y');
+
+                return sprintf(
+                    'Fiche_kilometrique_%s_%s_%s_%s.pdf',
+                    $entity->getUser(),
+                    $fromMonth,
+                    $toMonth,
+                    $year
+                );
+            }
+
+            throw new \Exception("Période annuelle non supportée : ".json_encode($this->period));
         }
-        $filename = 'Fiche_kilometrique_' . $entity->getUser() . '_' . $from. '_' . $to . '.pdf';
 
-        return $filename;
+        // Cas PDF mensuel
+        // période = ["January", "2025"]
+        $from = $this->translateMonth($this->period[0]);
+        $to = $this->period[1];
+
+        return sprintf(
+            'Fiche_kilometrique_%s_%s_%s.pdf',
+            $entity->getUser(),
+            $from,
+            $to
+        );
     }
+
 
     public function translateMonth(string $month): string
     {
@@ -87,13 +126,42 @@ class ReportPdf extends TCPDF
             
             $table_header = '<table border="0" cellspacing="1" cellpadding="1">';
             $table_header .= '<tr><td width="90" bgcolor="#6174d1" color="#ffffff"><strong>Nom</strong></td><td>'.$reports[0]->getUser().'</td></tr>';
-            if ($this->type == 'year') {
-                $firstDay = new \DateTime("first day of ".$this->period[0]);
-                $lastDay = new \DateTime("last day of ".$this->period[1]);
-            } else if ($this->type == 'month') {
-                $firstDay = new \DateTime("first day of ".$this->period[0].' '.$this->period[1]);
-                $lastDay = new \DateTime("last day of ".$this->period[0].' '.$this->period[1]);
+
+            if ($this->type === 'year') {
+
+                // Cas 1 : période = ["2025"]
+                if (count($this->period) === 1) {
+                    $year = $this->period[0];
+                    $firstDay = new \DateTime("first day of January $year");
+                    $lastDay  = new \DateTime("last day of December $year");
+                }
+
+                // Cas 2 : période = ["Jan 2025", "Dec 2025"]
+                elseif (count($this->period) === 2) {
+
+                    // Convert "Jan 2025" → "January 2025"
+                    $from = \DateTime::createFromFormat('M Y', $this->period[0]);
+                    $to   = \DateTime::createFromFormat('M Y', $this->period[1]);
+
+                    if (!$from || !$to) {
+                        throw new \Exception("Période invalide : ".json_encode($this->period));
+                    }
+
+                    $firstDay = new \DateTime("first day of ".$from->format('F Y'));
+                    $lastDay  = new \DateTime("last day of ".$to->format('F Y'));
+                }
+
+                else {
+                    throw new \Exception("Format de période annuel non supporté : ".json_encode($this->period));
+                }
             }
+
+            else if ($this->type === 'month') {
+                // période = ["January", "2025"]
+                $firstDay = new \DateTime("first day of ".$this->period[0].' '.$this->period[1]);
+                $lastDay  = new \DateTime("last day of ".$this->period[0].' '.$this->period[1]);
+            }
+
             $table_header .= '<tr><td bgcolor="#6174d1" color="#ffffff"><strong>Période</strong></td><td>du '.$firstDay->format('d/m/Y').' au '.$lastDay->format('d/m/Y').'</td></tr>';
             $table_header .= '</table>';
 
@@ -228,7 +296,7 @@ class ReportPdf extends TCPDF
         $table_footer .= '<td width="28%" class="title_footer">'.number_format($totals['amount'],2, ',', ' ').' €</td>';
         $table_footer .= '</tr>';
 
-        foreach ($this->vehiculesTotals as $key => $vehicule) {
+        foreach ($this->vehiculesTotals as $vehicule) {
             $vscale = $vehicule['Vehicule']->getPower().': '.$vehicule['Vehicule']->getScale();
             $vscale .= $vehicule['Vehicule']->isElectric() ? ' +20%': '';
             $table_footer .= '<tr>';

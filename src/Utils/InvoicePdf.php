@@ -79,7 +79,6 @@ class InvoicePdf extends TCPDF
         $this->Cell(0, 5,'Copyright Mileo '.date('Y'), 'T', false, 'L', 0, '', 0, false, 'T', 'M');
         $this->SetFont('helvetica', 'I', 8);
         $this->Cell(0, 5,'Page '.$this->getAliasNumPage()."/".$this->getAliasNbPages(), 0, false, 'R', 0, '', 0, false, 'T', 'M');
-        $txt = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
         $this->SetFont('helvetica', null, 8);
         $this->SetY(-18);
         $footer = '<table width="100%" border="0" cellspacing="1" cellpadding="1">';
@@ -100,7 +99,6 @@ class InvoicePdf extends TCPDF
         $pdf->SetAuthor('Mileo');
         $pdf->SetTitle('Fiche');
         $pdf->SetSubject('Kilometrique');  
-        $projectDir = $this->getProjectDir(); 
 
         $pdf->AddPage();  
         $pdf->setY(PDF_MARGIN_HEADER+60);

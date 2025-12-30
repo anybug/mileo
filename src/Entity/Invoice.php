@@ -5,27 +5,19 @@ namespace App\Entity;
 use App\Repository\InvoiceRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass=InvoiceRepository::class)
- */
+#[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 class Invoice
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="integer",nullable="true")
-     */
+    #[ORM\Column(type: 'integer', nullable: true)]
     private $num;
 
-    /**
-     * @ORM\OneToOne(targetEntity=Order::class, inversedBy="invoice")
-     * @ORM\JoinColumn(nullable=true)
-     */
+    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\OneToOne(targetEntity: Order::class, inversedBy: 'invoice')]
     private $order;
 
     public function getId(): ?int

@@ -34,9 +34,7 @@ use Symfony\Component\Mime\Address;
 
 class PaymentController extends AbstractController 
 {
-    /**
-     * @Route("/prepare-payment/{order_id}/checkout", name="payum_prepare_payment")
-     */
+    #[Route(path: '/prepare-payment/{order_id}/checkout', name: 'payum_prepare_payment')]
     public function prepareAction(Payum $payum, int $order_id, EntityManagerInterface $manager)
     {
         $order = $manager->getRepository(Order::class)->find($order_id);
@@ -63,9 +61,7 @@ class PaymentController extends AbstractController
         return $this->redirect($captureToken->getTargetUrl());    
     }
 
-    /**
-     * @Route("/payment-done/{order_id}", name="payum_payment_done")
-     */
+    #[Route(path: '/payment-done/{order_id}', name: 'payum_payment_done')]
     public function done(AdminUrlGenerator $adminUrlGenerator,Request $request, Payum $payum, EntityManagerInterface $manager, int $order_id)
     {
         $token = $payum->getHttpRequestVerifier()->verify($request);
