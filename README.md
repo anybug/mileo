@@ -21,7 +21,7 @@ Mileo est une application de calculs d'indémnités kilométriques simple et rap
 
 ## Stack de développement
 
-- Symfony 5.4
+- Symfony 6.4
 - PHP 8.2
 - EasyAdminBundle 4
 - JQuery
