@@ -17,10 +17,12 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
 use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use App\Form\ResetPasswordFormType;
 use App\Form\ResetPasswordRequestFormType;
 use App\Repository\UserRepository;
+use App\Controller\App\DashboardAppController;
+use App\Controller\App\UserAppCrudController;
 use App\Entity\Order;
 use App\Entity\Plan;
 use App\Entity\User;
@@ -41,7 +43,7 @@ class SecurityController extends AbstractController
     /**
      * Registration
      */
-    public function registration(SessionInterface $session, Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher, EventDispatcherInterface $eventDispatcher,  LoginAuthenticator $loginAuthenticator, UserAuthenticatorInterface $userAuthenticator) 
+    public function registration(SessionInterface $session, Request $request, EntityManagerInterface $manager, MailerInterface $mailer, UserPasswordHasherInterface $passwordHasher, EventDispatcherInterface $eventDispatcher,  LoginAuthenticator $loginAuthenticator, UserAuthenticatorInterface $userAuthenticator, AdminUrlGenerator $adminUrlGenerator,) 
     {
         if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
             return $this->redirectToRoute('app');
@@ -61,6 +63,17 @@ class SecurityController extends AbstractController
             $user->setPassword($hash);
             $manager->persist($user);
             $manager->flush();
+
+            // Mail de bienvenue
+            $email = (new TemplatedEmail())
+                ->to(new Address($user->getEmail()))
+                ->subject('Bienvenue sur Mileo !')
+                ->htmlTemplate('Emails/welcome.html.twig')
+                ->context([
+                    'user' => $user,
+                ]);
+
+            $mailer->send($email);
 
             $eventDispatcher->dispatch(
                 new UserFirstLoginEvent($user)

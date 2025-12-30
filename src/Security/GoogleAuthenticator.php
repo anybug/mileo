@@ -17,6 +17,9 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Event\UserFirstLoginEvent;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Mime\Address;
 
 
 class GoogleAuthenticator extends OAuth2Authenticator
@@ -26,7 +29,8 @@ class GoogleAuthenticator extends OAuth2Authenticator
         private EntityManagerInterface $em,
         private UrlGeneratorInterface $urlGenerator,
         private UserPasswordHasherInterface $passwordHasher,
-        private EventDispatcherInterface $eventDispatcher
+        private EventDispatcherInterface $eventDispatcher,
+        private MailerInterface $mailer,
     ) {}
 
     public function supports(Request $request): bool
@@ -69,6 +73,14 @@ class GoogleAuthenticator extends OAuth2Authenticator
                     $user->setAuthProvider('google');
                     $this->em->persist($user);
                     $this->em->flush();
+
+                    $email = (new TemplatedEmail())
+                        ->to(new Address($user->getEmail()))
+                        ->subject('Bienvenue sur Mileo !')
+                        ->htmlTemplate('Emails/welcome.html.twig')
+                        ->context(['user' => $user]);
+
+                    $this->mailer->send($email);
 
                      if ($isNew || !$user->getSubscription()) {
                         $this->eventDispatcher->dispatch(
