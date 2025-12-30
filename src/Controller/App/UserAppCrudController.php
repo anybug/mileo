@@ -27,6 +27,10 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class UserAppCrudController extends AbstractCrudController
 {
@@ -64,9 +68,9 @@ class UserAppCrudController extends AbstractCrudController
         return $actions
             ->remove(Crud::PAGE_EDIT, Action::SAVE_AND_CONTINUE)
             ->disable(Action::NEW)
-            ->disable(Action::DELETE)
-            ;
+            ->disable(Action::DELETE);
     }
+
 
     public function edit(AdminContext $context)
     {
@@ -173,4 +177,26 @@ class UserAppCrudController extends AbstractCrudController
             'plan' => $plan
         ]);
     }
+
+    public function deleteMe(
+        EntityManagerInterface $em,
+        TokenStorageInterface $tokenStorage,
+        SessionInterface $session
+    ): RedirectResponse {
+        /** @var User|null $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            throw new AccessDeniedException();
+        }
+
+        $em->remove($user); // Suppression en cascade des vehicules, reportline, ...
+        $em->flush();
+
+        $tokenStorage->setToken(null);
+        $session->invalidate();
+
+        return $this->redirectToRoute('security_login');
+    }
+
 }

@@ -297,6 +297,13 @@ class DashboardAppController extends AbstractDashboardController
 
     public function configureMenuItems(): iterable
     {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if ($user && $user->getSubscription() && $user->getSubscription()->getPlan()) {
+            $planName = strtolower(trim((string) $user->getSubscription()->getPlan()->getName()));
+        }
+
         yield MenuItem::linktoDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Travels');
@@ -307,8 +314,13 @@ class DashboardAppController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class)->setController(UserAppCrudController::class);
         yield MenuItem::linkToCrud('My vehicules', 'fa fa-car', Vehicule::class);
         yield MenuItem::linkToCrud('My addresses', 'fa fa-map-marker-alt', UserAddress::class);
-        yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class);
+
+        if (!$planName === 'free') {
+            yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class);
+        }
+        
         yield MenuItem::linkToCrud('Scales', 'fa-solid fa-table', Scale::class)->setController(ScaleAppCrudController::class);
+
     }
 
     public function configureUserMenu(UserInterface $user): UserMenu
