@@ -122,7 +122,7 @@ class Subscription
         $now = new \DateTime("now");
         $date = new \DateTime($now->format("Y-m-d"));
         $warning = new \DateTime($this->getSubscriptionEnd()->format("Y-m-d"));
-        $warning->modify('-1 month');
+        $warning->modify('-7 days');
         if($date == $warning && $this->isValid())
         {
             return true;

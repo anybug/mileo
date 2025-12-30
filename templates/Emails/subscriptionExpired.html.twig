@@ -1,0 +1,19 @@
+<body>
+    <p>Bonjour {{ user.getFirstName() }} {{ user.getLastName() }},</p>
+
+    <p>
+        Votre abonnement Mileo n’est plus actif depuis le
+        <strong>{{ user.getSubscription().getSubscriptionEnd()|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}</strong>.
+    </p>
+
+    <p>
+        Cela signifie que certaines fonctionnalités ne sont plus disponibles tant que l’abonnement n’est pas renouvelé.
+    </p>
+
+    <p>Pour réactiver votre accès, vous pouvez renouveler votre abonnement ici :</p>
+    <p><a href="{{ url }}">Renouveler mon abonnement</a></p>
+
+    <p>Si vous avez déjà renouvelé récemment, vous pouvez ignorer ce message.</p>
+
+    <p>L'équipe <span style="font-size: 20px; font-weight: bold; color: #6174d1 !important;"><font color="#6174d1">Mil</font></span><span style="font-size: 20px; font-weight: bold;color: #242F51 !important;"><font color="#242F51">eo</font></span></p>
+</body>
