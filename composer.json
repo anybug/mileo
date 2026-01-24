@@ -14,7 +14,7 @@
         "doctrine/doctrine-bundle": "^2.3",
         "doctrine/doctrine-migrations-bundle": "^3.1",
         "doctrine/orm": "^2.8",
-        "easyadminfriends/easyadmindashboard-bundle": "2.x-dev",
+        "easyadminfriends/easyadmindashboard-bundle": "^3.0",
         "easycorp/easyadmin-bundle": "^4.0",
         "flux-se/payum-stripe-bundle": "^2.0",
         "google/recaptcha": "^1.2",

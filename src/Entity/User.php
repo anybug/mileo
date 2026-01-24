@@ -83,11 +83,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(targetEntity: Subscription::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private $subscription;
 
-    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'user', cascade: ['persist'], orphanRemoval: false)]
     private $orders;
 
     #[ORM\OneToMany(targetEntity: UserAddress::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist', 'remove'])]
     private $userAddresses;
+
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?self $managedBy = null;
+
+    #[ORM\Column(type: 'string', length: 64, nullable: true)]
+    private ?string $deleteToken = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $deleteTokenRequestedAt = null;
 
     const PERIOD_JANUARY = 'January';
     const PERIOD_FEBRUARY = 'February';
@@ -643,6 +653,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAuthProvider(string $authProvider): static
     {
         $this->authProvider = $authProvider;
+
+        return $this;
+    }
+
+    public function getManagedBy(): ?self
+    {
+        return $this->managedBy;
+    }
+
+    public function setManagedBy(?self $managedBy): static
+    {
+        $this->managedBy = $managedBy;
+
+        return $this;
+    }
+
+    public function getDeleteToken(): ?string
+    {
+        return $this->deleteToken;
+    }
+
+    public function setDeleteToken(?string $deleteToken): static
+    {
+        $this->deleteToken = $deleteToken;
+
+        return $this;
+    }
+
+    public function getDeleteTokenRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->deleteTokenRequestedAt;
+    }
+
+    public function setDeleteTokenRequestedAt(?\DateTimeImmutable $deleteTokenRequestedAt): static
+    {
+        $this->deleteTokenRequestedAt = $deleteTokenRequestedAt;
 
         return $this;
     }

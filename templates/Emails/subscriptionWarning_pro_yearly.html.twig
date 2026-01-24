@@ -1,12 +1,11 @@
 <body>
     <p>Bonjour {{ user.getFirstName() }} {{ user.getLastName() }},</p>
+    <p>Vous bénéficiez actuellement de l’offre <strong>Mileo Pro</strong> et nous vous en remercions chaleureusement.
     <p>
-        Votre abonnement <strong>Mileo Pro Annuel</strong> arrive à expiration dans 7 jours.
-        Il ne sera plus valide à partir du
-        {{ user.getSubscription().getSubscriptionEnd()|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}.
+        Votre abonnement arrive à expiration le {{ end|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}.
     </p>
 
-    <p>Pour éviter toute interruption, vous pouvez renouveler dès maintenant :</p>
+    <p>Afin d'éviter toute interruption, vous pouvez renouveler dès maintenant :</p>
     <p><a href="{{ url }}">Renouveler mon abonnement Pro annuel</a></p>
 
     <p>Nous vous remercions pour votre fidélité.</p>

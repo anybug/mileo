@@ -1,0 +1,18 @@
+{# templates/Emails/delete_account_deleted.html.twig #}
+<body>
+    <p>Bonjour {{ user.getFirstName() }} {{ user.getLastName() }},</p>
+
+    <p>
+        Nous vous confirmons que votre compte Mileo a bien été supprimé{% if deletedAt is defined and deletedAt %} le
+        <strong>{{ deletedAt|format_datetime(locale='fr', pattern="dd MMMM YYYY") }}</strong>{% endif %}.
+    </p>
+
+    <p>
+        Merci d’avoir utilisé Mileo.
+    </p>
+
+    <p>
+        L'équipe
+        <span style="font-size: 20px; font-weight: bold; color: #6174d1 !important;"><font color="#6174d1">Mil</font></span><span style="font-size: 20px; font-weight: bold;color: #242F51 !important;"><font color="#242F51">eo</font></span>
+    </p>
+</body>

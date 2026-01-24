@@ -3,11 +3,7 @@
 
     <p>
         Votre abonnement Mileo n’est plus actif depuis le
-        <strong>{{ user.getSubscription().getSubscriptionEnd()|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}</strong>.
-    </p>
-
-    <p>
-        Cela signifie que certaines fonctionnalités ne sont plus disponibles tant que l’abonnement n’est pas renouvelé.
+        <strong>{{ end|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}</strong>.
     </p>
 
     <p>Pour réactiver votre accès, vous pouvez renouveler votre abonnement ici :</p>

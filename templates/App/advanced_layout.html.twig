@@ -1,5 +1,25 @@
 {% extends '@!EasyAdmin/layout.html.twig' %}
 
+{% block header_custom_menu %}
+     <div class="d-flex align-items-center justify-content-end gap-2">
+        {% if is_granted('ROLE_PREVIOUS_ADMIN') %}
+        <a class="btn btn-success"
+            href="{{ path('manager_dashboard', {'_switch_user': '_exit'}) }}">
+            <i class="fa fa-user-check"></i> Retourner à mon interface manager
+        </a>
+        {% endif %}
+
+        {{ parent() }}
+    </div>
+
+{% endblock %}
+
+
+{% block content_top %}
+ 
+
+    {{ parent() }}
+{% endblock %}
 {% block body_javascript %}
     {% include 'App/javascript.html.twig' %}
     {{ encore_entry_script_tags('newapp') }}

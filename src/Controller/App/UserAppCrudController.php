@@ -9,6 +9,7 @@ use App\Form\OrderType;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
@@ -21,6 +22,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -31,16 +33,24 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Routing\Annotation\Route;
+
 
 class UserAppCrudController extends AbstractCrudController
 {
     private $passwordHasher;
     private $entityManager;
+    private AdminUrlGenerator $adminUrlGenerator;
 
-    public function __construct(UserPasswordHasherInterface $passwordHasher,EntityManagerInterface $entityManager)
+    public function __construct(UserPasswordHasherInterface $passwordHasher, AdminUrlGenerator $adminUrlGenerator)
     {
         $this->passwordHasher = $passwordHasher;
-        $this->entityManager = $entityManager;
+        $this->adminUrlGenerator = $adminUrlGenerator;
     }
     
     public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
@@ -70,7 +80,6 @@ class UserAppCrudController extends AbstractCrudController
             ->disable(Action::NEW)
             ->disable(Action::DELETE);
     }
-
 
     public function edit(AdminContext $context)
     {
@@ -152,7 +161,7 @@ class UserAppCrudController extends AbstractCrudController
     public function subscriptionForm(Request $request, EntityManagerInterface $manager)
     {
         $order = new Order;
-        $plan = $this->entityManager->getRepository(Plan::class)->findOneBy(['id' => 3]);
+        $plan = $manager->getRepository(Plan::class)->findOneBy(['id' => 3]);
         $order->setPlan($plan);
 
         //order name autocomplete
@@ -166,35 +175,121 @@ class UserAppCrudController extends AbstractCrudController
         if ($form->isSubmitted() && $form->isValid()) {
             $order->setStatus('pending');
             $order->setUser($this->getUser());
-            $this->entityManager->persist($order);
-            $this->entityManager->flush();
+            $manager->persist($order);
+            $manager->flush();
 
             return $this->redirectToRoute('payum_prepare_payment', ['order_id' => $order->getId()]);
         }
 
-        return $this->renderForm('App/Profile/order.html.twig', [
+        return $this->render('App/Profile/order.html.twig', [
             'form' => $form,
             'plan' => $plan
         ]);
     }
 
-    public function deleteMe(
+    public function requestDeleteMe(
+        Request $request,
         EntityManagerInterface $em,
-        TokenStorageInterface $tokenStorage,
-        SessionInterface $session
+        MailerInterface $mailer,
+        UrlGeneratorInterface $urlGenerator,
+        CsrfTokenManagerInterface $csrf
     ): RedirectResponse {
         /** @var User|null $user */
         $user = $this->getUser();
-
         if (!$user) {
             throw new AccessDeniedException();
         }
 
-        $em->remove($user); // Suppression en cascade des vehicules, reportline, ...
+        // CSRF (simple)
+        $submittedToken = (string) $request->request->get('_token');
+        if (!$csrf->isTokenValid(new CsrfToken('delete_me', $submittedToken))) {
+            throw new AccessDeniedException('CSRF invalide');
+        }
+
+        // Génère / remplace un token (valable 24h par ex.)
+        $token = bin2hex(random_bytes(32));
+        $user->setDeleteToken($token);
+        $user->setDeleteTokenRequestedAt(new \DateTimeImmutable());
+
+        $em->persist($user);
+        $em->flush();
+
+        $confirmUrl = $urlGenerator->generate(
+            'app_confirm_delete_me',
+            ['token' => $token],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $email = (new TemplatedEmail())
+            ->to($user->getEmail())
+            ->bcc($_ENV['ADMIN_EMAIL'])
+            ->subject('Demande de suppression de votre compte Mileo')
+            ->htmlTemplate('Emails/delete_account_confirm.html.twig')
+            ->context([
+                'user' => $user,
+                'confirmUrl' => $confirmUrl,
+                'validHours' => 24,
+            ]);
+
+        $mailer->send($email);
+
+        $this->addFlash('info', 'Un email de confirmation de vient de vous être envoyé.');
+        return $this->redirect($this->adminUrlGenerator->setController(self::class)->setAction(Action::INDEX)->setEntityId($user->getId())->generateUrl());
+    }
+
+    #[Route('/dashboard/delete-account/confirm/{token}', name: 'app_confirm_delete_me', methods: ['GET'])]
+    public function confirmDeleteMe(
+        string $token,
+        EntityManagerInterface $em,
+        TokenStorageInterface $tokenStorage,
+        SessionInterface $session,
+        MailerInterface $mailer
+    ): Response {
+        /** @var User|null $user */
+        $user = $em->getRepository(User::class)->findOneBy(['deleteToken' => $token]);
+
+        if (!$user || !$user->getDeleteTokenRequestedAt()) {
+            return new Response('Lien invalide.', 404);
+        }
+
+        // Expiration 24h
+        $expiresAt = $user->getDeleteTokenRequestedAt()->modify('+24 hours');
+        if (new \DateTimeImmutable() > $expiresAt) {
+            return new Response('Lien expiré.', 410);
+        }
+
+        // IMPORTANT: détacher les orders AVANT suppression user
+        foreach ($user->getOrders() as $order) {
+            $order->setUser(null);
+            $em->persist($order);
+        }
+
+        // Nettoyage token
+        $user->setDeleteToken(null);
+        $user->setDeleteTokenRequestedAt(null);
+
+        $userEmail = (string) $user->getEmail();
+
+        $mailer->send(
+            (new TemplatedEmail())
+                ->bcc($_ENV['ADMIN_EMAIL'])
+                ->to($userEmail)
+                ->subject('Votre compte Mileo a bien été supprimé')
+                ->htmlTemplate('Emails/account_deleted.html.twig')
+                ->context([
+                    'user' => $user,
+                    'userEmail' => $userEmail,
+                ])
+        );
+
+        // Suppression user (cascade sur vehicules/reports etc, mais PAS orders)
+        $em->remove($user);
         $em->flush();
 
         $tokenStorage->setToken(null);
         $session->invalidate();
+
+        $this->addFlash('info', 'Votre compte Mileo a bien été supprimé.');
 
         return $this->redirectToRoute('security_login');
     }

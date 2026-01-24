@@ -70,6 +70,7 @@ Balance Start Period: Début de période fiscale
 Brand: Marque
 Model: Modèle
 Finish: Terminer
+Category: Catégorie
 
 January: Janvier
 February : Février
@@ -105,3 +106,7 @@ I already have an account: J'ai déjà un compte
 My invoices: Mes factures
 Invoices: Factures
 Invoice: Facture
+
+## Manager ##
+Members : Membres
+Team : Équipe

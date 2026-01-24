@@ -12,11 +12,15 @@ use App\Entity\Vehicule;
 use App\Entity\ReportLine;
 use App\Entity\UserAddress;
 use App\Form\UserStep2Type;
+use App\Form\BugReportType;
 use App\Form\UserStep3Type;
 use App\Entity\Subscription;
+use Symfony\Component\Mime\Email;
 use Symfony\UX\Chartjs\Model\Chart;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Controller\Admin\UserCrudController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Form\Test\FormInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -34,13 +38,12 @@ use Symfony\Component\Form\Test\FormBuilderInterface;
 use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use Symfony\Component\Security\Core\User\UserInterface;
-use EasyCorp\Bundle\EasyAdminBundle\Factory\FormFactory;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
-use EasyAdminFriends\EasyAdminDashboardBundle\Controller\DefaultController as EasyAdminDashboard;
-
+use EasyAdminFriends\EasyAdminDashboardBundle\Service\EasyAdminDashboard;
 
 class DashboardAppController extends AbstractDashboardController
 {
@@ -49,13 +52,19 @@ class DashboardAppController extends AbstractDashboardController
     private $entityManager;
     private $adminUrlGenerator;
 
-    public function __construct(AdminUrlGenerator $adminUrlGenerator, EasyAdminDashboard $easyAdminDashboard,ChartBuilderInterface $chartBuilder,EntityManagerInterface $entityManager, FormFactoryInterface $formFactory)
+    public function __construct(
+        AdminUrlGenerator $adminUrlGenerator, 
+        EasyAdminDashboard $easyAdminDashboard,
+        ChartBuilderInterface $chartBuilder,
+        EntityManagerInterface $entityManager, 
+        FormFactoryInterface $formFactory
+    )
     {
+        $this->adminUrlGenerator = $adminUrlGenerator;
         $this->easyAdminDashboard = $easyAdminDashboard;
         $this->chartBuilder = $chartBuilder;
         $this->entityManager = $entityManager;
         $this->formFactory = $formFactory;
-        $this->adminUrlGenerator = $adminUrlGenerator;
     }
 
     public function configureCrud(): Crud
@@ -106,12 +115,17 @@ class DashboardAppController extends AbstractDashboardController
     #[Route(path: '/dashboard', name: 'app')]
     public function index(): Response
     {
+        /** Quick & dirty for beta tests */
+        if ($this->isGranted('ROLE_MANAGER')) {
+            return $this->redirectToRoute('manager_dashboard');
+        }
+
         $request = $this->container->get('request_stack')->getCurrentRequest();
         $step2 = $request->query->get('step2') ?? false;
         $request->query->get('step3') ?? false;
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
-        dump($user);
+
         $step = [];
 
         if (!$user->getSubscription() || !$user->getSubscription()->isValid()) {
@@ -159,8 +173,7 @@ class DashboardAppController extends AbstractDashboardController
             }
 
             return $this->render('App/Dashboard/wizard.html.twig', [
-                'dashboard' => $this->easyAdminDashboard->generateDashboardValues(),
-                'layout_template_path' => $this->easyAdminDashboard->getLayoutTemplate(),
+                'dashboard' => $this->easyAdminDashboard->getDashboard(),
                 'form' => $form->createView(),
                 'step' => $step,
             ]);
@@ -276,8 +289,7 @@ class DashboardAppController extends AbstractDashboardController
         }
 
         return $this->render('App/Dashboard/index.html.twig', [
-            'dashboard' => $this->easyAdminDashboard->generateDashboardValues(),
-            'layout_template_path' => $this->easyAdminDashboard->getLayoutTemplate(),
+            'dashboard' => $this->easyAdminDashboard->getDashboard(),
             'chartAnnuel' => $chartAnnuel,
             'chartTotal' => $chartTotal,
             'years' => $resultListYears,
@@ -312,39 +324,98 @@ class DashboardAppController extends AbstractDashboardController
 
         yield MenuItem::section('Parameters');
         yield MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class)->setController(UserAppCrudController::class);
-        yield MenuItem::linkToCrud('My vehicules', 'fa fa-car', Vehicule::class);
+        yield MenuItem::linkToCrud('My vehicules', 'fa fa-car', Vehicule::class)->setController(VehiculeAppCrudController::class);
         yield MenuItem::linkToCrud('My addresses', 'fa fa-map-marker-alt', UserAddress::class);
 
-        if (!$planName === 'free') {
+        if ($planName !== 'free') {
             yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class);
         }
         
         yield MenuItem::linkToCrud('Scales', 'fa-solid fa-table', Scale::class)->setController(ScaleAppCrudController::class);
 
+        yield MenuItem::section('Support');
+        yield MenuItem::linkToRoute('Contact express', 'fa fa-paper-plane', 'app_contact_express');
     }
 
     public function configureUserMenu(UserInterface $user): UserMenu
     {
-        // Usually it's better to call the parent method because that gives you a
-        // user menu with some menu items already created ("sign out", "exit impersonation", etc.)
-        // if you prefer to create the user menu from scratch, use: return UserMenu::new()->...
-        return parent::configureUserMenu($user)
-            // use the given $user object to get the user name
-            ->setName($user->__toString())
-            // use this method if you don't want to display the name of the user
-            ->displayUserName(true)
+        $menu = parent::configureUserMenu($user);
 
-            // use this method if you don't want to display the user image
-            //->displayUserAvatar(true)
-            // you can also pass an email address to use gravatar's service
-            //->setGravatarEmail($user->getFirstname())
+        // Nom lisible
+        $displayName = method_exists($user, 'getFirstname')
+            ? trim(($user->getFirstname() ?? '').' '.($user->getLastname() ?? ''))
+            : $user->getUserIdentifier();
 
-            // you can use any type of menu item, except submenus
-            ->addMenuItems([
-                MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class),
-                //MenuItem::linkToRoute('Settings', 'fa fa-user-cog', '...', ['...' => '...']),
-                //MenuItem::section(),
-                //MenuItem::linkToLogout('Logout', 'fa fa-sign-out'),
-            ]);
+        if ($displayName === '') {
+            $displayName = $user->getUserIdentifier();
+        }
+
+        if ($this->isGranted('ROLE_PREVIOUS_ADMIN')) {
+            $menu->setName('Connecté en tant que '.$displayName);
+            $menu->displayUserName(true);
+        }
+
+        return $menu;
+    }
+
+    #[Route('/dashboard/contact-express', name: 'app_contact_express')]
+    public function bugReport(Request $request, MailerInterface $mailer): Response
+    {
+        /** @var \App\Entity\User|null $user */
+        $user = $this->getUser();
+
+        $form = $this->createForm(BugReportType::class, [
+            'type' => 'suggestion'
+        ]);
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData(); // array
+
+            $type = $data['type'] ?? 'suggestion';
+            $category = $data['category'] ?? null;
+            $emailUser = '';
+            if ($user && method_exists($user, 'getEmail')) {
+                $emailUser = (string) $user->getEmail();
+            }
+            $description = $data['description'] ?? '';
+
+            /** @var UploadedFile|null $file */
+            $file = $form->get('screenshot')->getData();
+
+            $subject = sprintf('[Mileo] contact express - %s%s', strtoupper($type), $category ? ' / '.$category : '');
+
+            $email = (new Email())
+                ->to($_ENV['ADMIN_EMAIL'])
+                ->subject($subject)
+                ->text(
+                    'Utilisateur : ' . $user . \PHP_EOL  .
+                    'E-mail : ' . $emailUser . \PHP_EOL .
+                    'Type de demande : ' . $type . \PHP_EOL .
+                    'Catégorie (précision) : ' . $category . \PHP_EOL . \PHP_EOL .
+                    'Message : ' . \PHP_EOL .
+                        $description,
+                    'utf-8'
+                );
+
+            if ($file) {
+                $email->attachFromPath(
+                    $file->getPathname(),
+                    $file->getClientOriginalName(),
+                    $file->getMimeType() ?: 'application/octet-stream'
+                );
+            }
+
+            $mailer->send($email);
+
+            $this->addFlash('success', 'Merci ! Votre message a bien été envoyé au support, nous faisons notre possible pour le traiter dans les plus bref délais.');
+            return $this->redirectToRoute('app');
+        }
+
+        return $this->render('App/Dashboard/contact_express.html.twig', [
+            'dashboard' => $this->easyAdminDashboard->getDashboard(),
+            'form' => $form->createView(),
+        ]);
     }
 }

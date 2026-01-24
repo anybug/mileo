@@ -1,0 +1,145 @@
+{# templates/App/advanced_new.html.twig #}
+{% extends '@!EasyAdmin/crud/new.html.twig' %}
+
+{% block content_title %}
+    {% set url_back = ea_url().setAction('index') %}
+    <a href="{{ url_back|raw }}"><i class="fa-solid fa-arrow-left"></i></a>
+    {{ parent() }}
+{% endblock %}
+
+{% block body_javascript %}
+  {{ parent() }}
+  <script>
+  (function () {
+    const POWERS_URL = "{{ path('team_vehicule_ajax_powers') }}";
+    const SCALES_URL = "{{ path('team_vehicule_ajax_scales') }}";
+
+    const qs = (sel) => document.querySelector(sel);
+
+    const fetchItems = async (url) => {
+      const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const json = await res.json();
+      return Array.isArray(json.items) ? json.items : [];
+    };
+
+    // ---- TomSelect helpers (EasyAdmin) ----
+    const hasTomSelect = (select) => !!(select && select.tomselect);
+
+    const setDisabled = (select, disabled) => {
+      if (!select) return;
+      if (hasTomSelect(select)) {
+        disabled ? select.tomselect.disable() : select.tomselect.enable();
+      } else {
+        select.disabled = disabled;
+      }
+      select.classList.toggle('bg-light', disabled);
+    };
+
+    const setOptions = (select, items) => {
+      if (!select) return;
+
+      if (hasTomSelect(select)) {
+        const ts = select.tomselect;
+        ts.clear(true);          // clear selection
+        ts.clearOptions();       // clear dropdown options
+        ts.addOption(items.map(it => ({ value: String(it.id), text: it.text })));
+        ts.refreshOptions(false);
+      } else {
+        select.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = ' ';
+        select.appendChild(placeholder);
+
+        items.forEach(it => {
+          const opt = document.createElement('option');
+          opt.value = String(it.id);
+          opt.textContent = it.text;
+          select.appendChild(opt);
+        });
+      }
+    };
+
+    const setValue = (select, value) => {
+      if (!select) return;
+
+      if (hasTomSelect(select)) {
+        select.tomselect.setValue(String(value), true); // true = silent
+      } else {
+        select.value = String(value);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+
+    async function loadPowersFromType(typeValue) {
+      const powerSelect = qs('select[name$="[power]"]');
+      const scaleSelect = qs('select[name$="[scale]"]');
+      if (!powerSelect || !scaleSelect) return;
+
+      setDisabled(powerSelect, true);
+      setDisabled(scaleSelect, true);
+
+      setOptions(powerSelect, []);
+      setOptions(scaleSelect, []);
+      setValue(powerSelect, '');
+      setValue(scaleSelect, '');
+
+      const powers = await fetchItems(`${POWERS_URL}?type=${encodeURIComponent(typeValue)}`);
+
+      setOptions(powerSelect, powers);
+      setDisabled(powerSelect, false);
+
+      if (powers[0]) {
+        setValue(powerSelect, powers[0].id);
+        await loadScalesFromPower(String(powers[0].id));
+      }
+    }
+
+    async function loadScalesFromPower(powerId) {
+      const scaleSelect = qs('select[name$="[scale]"]');
+      if (!scaleSelect) return;
+
+      setDisabled(scaleSelect, true);
+      setOptions(scaleSelect, []);
+      setValue(scaleSelect, '');
+
+      const scales = await fetchItems(`${SCALES_URL}?power=${encodeURIComponent(powerId)}`);
+
+      setOptions(scaleSelect, scales);
+      setDisabled(scaleSelect, false);
+
+      if (scales[0]) {
+        setValue(scaleSelect, scales[0].id);
+      }
+    }
+
+    function initEmptyState() {
+      const powerSelect = qs('select[name$="[power]"]');
+      const scaleSelect = qs('select[name$="[scale]"]');
+      if (!powerSelect || !scaleSelect) return;
+
+      // NEW: rien n'est pré-sélectionné tant que type pas choisi
+      setDisabled(powerSelect, true);
+      setDisabled(scaleSelect, true);
+      setOptions(powerSelect, []);
+      setOptions(scaleSelect, []);
+      setValue(powerSelect, '');
+      setValue(scaleSelect, '');
+    }
+
+    // Délégation (Turbo-safe)
+    document.addEventListener('change', (e) => {
+      if (e.target && e.target.matches('input[type="radio"][name$="[type]"]')) {
+        if (e.target.checked) loadPowersFromType(e.target.value);
+      }
+      if (e.target && e.target.matches('select[name$="[power]"]')) {
+        if (e.target.value) loadScalesFromPower(e.target.value);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', initEmptyState);
+    document.addEventListener('turbo:load', initEmptyState);
+  })();
+  </script>
+{% endblock %}
+

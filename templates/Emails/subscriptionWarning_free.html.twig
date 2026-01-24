@@ -2,8 +2,11 @@
     <p>Bonjour {{ user.getFirstName() }} {{ user.getLastName() }},</p>
 
     <p>
-        Vous êtes actuellement sur l’offre <strong>Free</strong>.
-        Si vous souhaitez accéder aux fonctionnalités Pro et éviter toute limitation, vous pouvez passer sur une offre Pro.
+        Vous bénéficiez actuellement de l’offre d'essai <strong>Free</strong> Mileo et nous vous en remercions chaleureusement.
+    </p>
+    <p>
+        Cette période d'essai arrive à expiration le <strong>{{ end|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}</strong>.
+        Si vous souhaitez continuer à utiliser toutes les fonctionnalités de Mileo, l'offre Pro est faite pour vous ;)
     </p>
 
     <p>Découvrir / passer sur une offre Pro :</p>

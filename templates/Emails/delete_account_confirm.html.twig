@@ -1,0 +1,24 @@
+<body>
+    <h2>Demande de suppression de votre compte Mileo</h2>
+
+    <p>Bonjour {{ user.firstName }},</p>
+    <p>
+        Vous avez demandé la suppression de votre compte. 
+    </p>
+    <p class="mb-0 danger"><strong>Attention: en cliquant sur le lien ci-dessous, toutes vos informations (profil, rapports et véhicules) seront supprimés et vous devrez recréer un compte Mileo pour accéder de nouveau à la plateforme.</strong></p>
+    <p>
+        Pour confirmer la suppression de votre compte, cliquez sur le lien ci-dessous (lien valide {{ validHours }} heures.) :
+    </p>
+    <p style="margin: 24px 0;">
+        <a href="{{ confirmUrl }}"
+           style="display:inline-block;background:#6174d1;color:#ffffff !important;text-decoration:none;
+                  padding:12px 18px;border-radius:8px;font-weight:600;">
+            Confirmer la suppression de mon compte
+        </a>
+    </p>
+
+    <p>Si vous n’êtes pas à l’origine de cette demande, pour pouvez ignorez cet email.</p>
+
+    <p>L'équipe <span style="font-size: 20px; font-weight: bold; color: #6174d1 !important;"><font color="#6174d1">Mil</font></span><span style="font-size: 20px; font-weight: bold;color: #242F51 !important;"><font color="#242F51">eo</font></span> vous remercie chaleureusement pour votre participation et espère vous revoir bientôt sur notre plateforme.</p>
+
+</body>

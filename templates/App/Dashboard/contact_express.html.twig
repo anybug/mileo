@@ -1,0 +1,150 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% set page_title = 'L\'équipe Mileo à votre service !' %}
+
+{% block page_title %} {{ page_title|trans }}{% endblock %}
+{% block main %}
+
+<article class="content">
+    <section class="">
+        <p class="fs-6">
+        Soucieux de la qualité de Mileo, notre équipe travaille à son développement en continu. <br /><br />
+        Si vous souhaitez nous faire part d'une idée de nouvelle fonctionnalité ou nous signaler un bug ? <br />
+            n'hésitez pas à nous contacter depuis le formulaire ci-dessous ou par téléphone au 05.46.89.43.44.
+        </p>   
+    </section>
+
+    <section class="content-body">
+        <div class="card shadow-sm w-75" >
+            <div class="card-header">
+                <h4>Contact express</h4>
+            </div>
+
+            <div class="card-body">
+                {{ form_start(form, {
+                    'attr': {
+                        'id': 'bugreport-form',
+                        'class': 'needs-validation'
+                    }
+                }) }}
+
+                <div class="row g-3 form-group">
+
+                    {# TYPE #}
+                    <div class="col-12 col-md-6">
+                        {{ form_label(form.type) }}
+                        {{ form_widget(form.type, {'attr': {'class': 'form-select w-100'}}) }}
+                        {{ form_errors(form.type) }}
+                    </div>
+
+                    {# CATEGORY #}
+                    <div class="col-12 col-md-6" id="category-wrapper">
+                        {{ form_label(form.category) }}
+                        {{ form_widget(form.category, {'attr': {'class': 'form-select w-100'}}) }}
+                        {{ form_errors(form.category) }}
+                    </div>
+
+                    {# EMAIL (READONLY) 
+                    <div class="col-12">
+                        {{ form_label(form.email, null, {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.email, {
+                            'attr': {
+                                'class': 'form-control w-100 email-readonly',
+                                'readonly': true,
+                                'tabindex': '-1'
+                            }
+                        }) }}
+                        {{ form_errors(form.email) }}
+                    </div> #}
+
+                    {# DESCRIPTION #}
+                    <div class="col-12">
+                        {{ form_label(form.description) }}
+                        {{ form_widget(form.description, {
+                            'attr': {
+                                'class': 'form-control w-100',
+                                'rows': 8,
+                                'placeholder': 'Décris le problème rencontré avec le plus de détails possible...'
+                            }
+                        }) }}
+                        {{ form_errors(form.description) }}
+                    </div>
+
+                    {# SCREENSHOT #}
+                    <div class="col-12">
+                        {{ form_label(form.screenshot) }}
+                        {{ form_widget(form.screenshot, {
+                            'attr': {
+                                'class': 'form-control w-100',
+                                'accept': 'image/png,image/jpeg,image/webp'
+                            }
+                        }) }}
+                        {{ form_help(form.screenshot) }}
+                        {{ form_errors(form.screenshot) }}
+                    </div>
+
+                    {# ACTIONS #}
+                    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <a class="btn btn-secondary" href="{{ path('app') }}">
+                            Annuler
+                        </a>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-paper-plane me-1"></i> Envoyer
+                        </button>
+                    </div>
+
+                </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </section>
+</article>
+
+
+    {# === STYLES === #}
+    <style>
+        .email-readonly {
+            pointer-events: none;
+            user-select: none;
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+    </style>
+
+    {# === JS : REFRESH CATEGORY ON TYPE CHANGE === #}
+    <script>
+        (function () {
+            const form = document.getElementById('bugreport-form');
+            if (!form) return;
+
+            const typeSelect = form.querySelector('[name$="[type]"]');
+            if (!typeSelect) return;
+
+            typeSelect.addEventListener('change', function () {
+                const data = new FormData(form);
+
+                // Ne pas envoyer le fichier lors du refresh AJAX
+                const screenshotName = typeSelect.name.replace('[type]', '[screenshot]');
+                data.delete(screenshotName);
+
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: data
+                })
+                    .then(response => response.text())
+                    .then(html => {
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = html;
+
+                        const newWrapper = tmp.querySelector('#category-wrapper');
+                        const oldWrapper = document.getElementById('category-wrapper');
+
+                        if (newWrapper && oldWrapper) {
+                            oldWrapper.replaceWith(newWrapper);
+                        }
+                    })
+                    .catch(() => {});
+            });
+        })();
+    </script>
+{% endblock %}

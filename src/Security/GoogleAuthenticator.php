@@ -71,6 +71,7 @@ class GoogleAuthenticator extends OAuth2Authenticator
                     $hashedPassword = $this->passwordHasher->hashPassword($user ,$pwd);
                     $user->setPassword($hashedPassword);
                     $user->setAuthProvider('google');
+                    $user->setRoles(["ROLE_USER"]);
                     $this->em->persist($user);
                     $this->em->flush();
 

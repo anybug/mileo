@@ -1,0 +1,234 @@
+{# templates/Team/advanced_edit.html.twig #}
+{% extends '@!EasyAdmin/crud/edit.html.twig' %}
+
+{% block content_title %}
+    {% set url_back = ea_url().setAction('index') %}
+    <a href="{{ url_back|raw }}"><i class="fa-solid fa-arrow-left"></i></a>
+    {{ parent() }}
+{% endblock %}
+
+{% block body_javascript %}
+  {{ parent() }}
+
+  <style>
+    .ea-mini-loader {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .9rem;
+      opacity: .75;
+      margin-top: .25rem;
+    }
+    .ea-mini-loader__spinner {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      animation: eaSpin .7s linear infinite;
+    }
+    @keyframes eaSpin { to { transform: rotate(360deg); } }
+
+    .is-loading-field {
+      opacity: .6;
+      transition: opacity .15s ease;
+    }
+  </style>
+
+  <script>
+  (function () {
+    const POWERS_URL = "{{ path('team_vehicule_ajax_powers') }}";
+    const SCALES_URL = "{{ path('team_vehicule_ajax_scales') }}";
+
+    const qs = (sel) => document.querySelector(sel);
+
+    const fetchItems = async (url) => {
+      const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const json = await res.json();
+      return Array.isArray(json.items) ? json.items : [];
+    };
+
+    // ---- EasyAdmin TomSelect helpers ----
+    const hasTomSelect = (select) => !!(select && select.tomselect);
+
+    const setDisabled = (select, disabled) => {
+      if (!select) return;
+      if (hasTomSelect(select)) {
+        disabled ? select.tomselect.disable() : select.tomselect.enable();
+      } else {
+        select.disabled = disabled;
+      }
+      select.classList.toggle('bg-light', disabled);
+    };
+
+    const setOptions = (select, items) => {
+      if (!select) return;
+
+      if (hasTomSelect(select)) {
+        const ts = select.tomselect;
+        ts.clear(true);
+        ts.clearOptions();
+        ts.addOption(items.map(it => ({ value: String(it.id), text: it.text })));
+        ts.refreshOptions(false);
+      } else {
+        select.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = ' ';
+        select.appendChild(placeholder);
+
+        items.forEach(it => {
+          const opt = document.createElement('option');
+          opt.value = String(it.id);
+          opt.textContent = it.text;
+          select.appendChild(opt);
+        });
+      }
+    };
+
+    const setValue = (select, value) => {
+      if (!select) return;
+
+      if (hasTomSelect(select)) {
+        select.tomselect.setValue(String(value), true); // silent
+      } else {
+        select.value = String(value);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+
+    // ---- Loader helpers ----
+    const ensureLoader = (select) => {
+      const wrapper =
+        select.closest('.form-group')
+        || select.closest('.field-association')
+        || select.closest('.col-12')
+        || select.closest('.col-md-6')
+        || select.parentElement;
+
+      if (!wrapper) return null;
+
+      let el = wrapper.querySelector('.ea-mini-loader');
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'ea-mini-loader';
+        el.style.display = 'none';
+        el.innerHTML = `<span class="ea-mini-loader__spinner"></span><span>Chargement…</span>`;
+        wrapper.appendChild(el);
+      }
+      return el;
+    };
+
+    const showLoader = (select) => {
+      const loader = ensureLoader(select);
+      if (loader) loader.style.display = 'inline-flex';
+      select.classList.add('is-loading-field');
+    };
+
+    const hideLoader = (select) => {
+      const loader = ensureLoader(select);
+      if (loader) loader.style.display = 'none';
+      select.classList.remove('is-loading-field');
+    };
+
+    const getCheckedType = () => {
+      const radios = document.querySelectorAll('input[type="radio"][name$="[type]"]');
+      const checked = Array.from(radios).find(r => r.checked);
+      return checked ? checked.value : null;
+    };
+
+    async function loadScalesFromPower(powerId, preferredScaleId = '') {
+      const scaleSelect = qs('select[name$="[scale]"]');
+      if (!scaleSelect) return;
+
+      setDisabled(scaleSelect, true);
+      setOptions(scaleSelect, []);
+      setValue(scaleSelect, '');
+
+      showLoader(scaleSelect);
+      try {
+        const scales = await fetchItems(`${SCALES_URL}?power=${encodeURIComponent(powerId)}`);
+
+        setOptions(scaleSelect, scales);
+        setDisabled(scaleSelect, false);
+
+        const preferredOk = preferredScaleId && scales.some(s => String(s.id) === String(preferredScaleId));
+        const scaleToSelect = preferredOk ? preferredScaleId : (scales[0] ? scales[0].id : '');
+
+        if (scaleToSelect) {
+          setValue(scaleSelect, scaleToSelect);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        hideLoader(scaleSelect);
+      }
+    }
+
+    async function loadPowersFromType(typeValue, preferredPowerId = '', preferredScaleId = '') {
+      const powerSelect = qs('select[name$="[power]"]');
+      const scaleSelect = qs('select[name$="[scale]"]');
+      if (!powerSelect || !scaleSelect) return;
+
+      setDisabled(powerSelect, true);
+      setDisabled(scaleSelect, true);
+
+      setOptions(powerSelect, []);
+      setOptions(scaleSelect, []);
+      setValue(powerSelect, '');
+      setValue(scaleSelect, '');
+
+      showLoader(powerSelect);
+      showLoader(scaleSelect);
+
+      try {
+        const powers = await fetchItems(`${POWERS_URL}?type=${encodeURIComponent(typeValue)}`);
+
+        setOptions(powerSelect, powers);
+        setDisabled(powerSelect, false);
+        hideLoader(powerSelect);
+
+        const preferredOk = preferredPowerId && powers.some(p => String(p.id) === String(preferredPowerId));
+        const powerToSelect = preferredOk ? preferredPowerId : (powers[0] ? powers[0].id : '');
+
+        if (powerToSelect) {
+          setValue(powerSelect, powerToSelect);
+          await loadScalesFromPower(String(powerToSelect), preferredScaleId);
+        } else {
+          hideLoader(scaleSelect);
+        }
+      } catch (e) {
+        hideLoader(powerSelect);
+        hideLoader(scaleSelect);
+        console.error(e);
+      }
+    }
+
+    function initEditState() {
+      const powerSelect = qs('select[name$="[power]"]');
+      const scaleSelect = qs('select[name$="[scale]"]');
+      if (!powerSelect || !scaleSelect) return;
+
+      const currentPowerId = powerSelect.value || '';
+      const currentScaleId = scaleSelect.value || '';
+      const typeValue = getCheckedType();
+
+      if (!typeValue) return;
+
+      loadPowersFromType(typeValue, currentPowerId, currentScaleId);
+    }
+
+    document.addEventListener('change', (e) => {
+      if (e.target && e.target.matches('input[type="radio"][name$="[type]"]')) {
+        if (e.target.checked) loadPowersFromType(e.target.value);
+      }
+      if (e.target && e.target.matches('select[name$="[power]"]')) {
+        if (e.target.value) loadScalesFromPower(e.target.value);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', initEditState);
+    document.addEventListener('turbo:load', initEditState);
+  })();
+  </script>
+{% endblock %}

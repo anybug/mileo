@@ -1,0 +1,25 @@
+<body>
+  <p>Bonjour,</p>
+
+  <p>
+    Nouveau signalement depuis Mileo.
+  </p>
+
+  <ul>
+    <li><strong>Type :</strong> {{ type|upper }}</li>
+    <li><strong>Catégorie :</strong> {{ category ?: '-' }}</li>
+    <li><strong>Email utilisateur :</strong> {{ emailUser ?: '-' }}</li>
+    <li><strong>Date :</strong> {{ date|format_datetime(locale='fr', pattern="dd MMMM yyyy à HH:mm:ss") }}</li>
+  </ul>
+
+  <p><strong>Description :</strong></p>
+  <p style="white-space: pre-line">{{ description }}</p>
+
+  <hr>
+
+  <p style="font-size: 12px; color: #666;">
+    Message envoyé depuis le formulaire “Contact express”.
+  </p>
+
+  <p>L'équipe <span style="font-size: 20px; font-weight: bold; color: #6174d1 !important;"><font color="#6174d1">Mil</font></span><span style="font-size: 20px; font-weight: bold;color: #242F51 !important;"><font color="#242F51">eo</font></span></p>
+</body>

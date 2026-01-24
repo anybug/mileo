@@ -1,5 +1,4 @@
-parameters:
-  easy_admin_dashboard:
+easy_admin_dashboard:
     title: "Bienvenue sur votre espace Mileo"
     blocks:
 ## ADMIN ##    
@@ -45,7 +44,6 @@ parameters:
             controller: App\Controller\Admin\PlanCrudController
             link_label: "Plans list"
             #permissions: ['ROLE_ADMIN']
-
 ## USER ##            
       Bloc2:
         label: Trajets
@@ -62,6 +60,7 @@ parameters:
             controller: App\Controller\App\ReportAppCrudController
             link_label: "Reports list"
             query: getReportsForUser
+            permissions: ['ROLE_USER']
           ReportLine:
             label: "My travels"
             size: 4
@@ -71,6 +70,7 @@ parameters:
             controller: App\Controller\App\ReportLineAppCrudController
             link_label: "Travels list"
             query: getLineForUser
+            permissions: ['ROLE_USER']
       Bloc3:
         label: Paramètres
         size: 12
@@ -86,6 +86,7 @@ parameters:
             controller: App\Controller\App\UserAppCrudController
             link_label: "View my profile"
             query: dashboardQuery
+            permissions: ['ROLE_USER']
           Vehicule:
             label: "My vehicules"
             size: 4
@@ -95,6 +96,7 @@ parameters:
             controller: App\Controller\App\VehiculeAppCrudController
             link_label: "Vehicule list"
             query: dashboardQuery
+            permissions: ['ROLE_USER']
           UserAddress:
             label: "My addresses"
             size: 4
@@ -104,3 +106,4 @@ parameters:
             controller: App\Controller\App\AddressesAppCrudController
             link_label: "UserAddress list"
             query: dashboardQuery
+            permissions: ['ROLE_USER']

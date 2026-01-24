@@ -1,0 +1,41 @@
+
+            
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                <i class="fa fa-user-slash"></i> {{ "Supprimer mon compte Mileo"|trans }}
+            </button>
+            {# --- /Bouton suppression compte --- #}
+            {# Modal #}
+            <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ "Suppression de votre compte Mileo"|trans }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p><i class="fa-solid fa-heart-crack"></i> Oh non ! vous souhaitez supprimer votre compte ? Nous serons triste de vous voir partir <i class="fa-regular fa-face-sad-cry"></i>.</p>
+                    <p>Auriez-vous quelques instants pour nous expliquer votre décision <a href="{{ path('app_contact_express') }}">en cliquant ici</a> svp ? Nous vous en serions extrêmement reconnaissant <i class="fa-regular fa-face-smile-beam"></i></p>
+                    <p>
+                    Si vous souhaitez nous quitter tout de suite, cliquez sur le bouton ci-dessous pour recevoir un email de confirmation contenant un lien permettant la suppression définitive de votre compte.
+                    </p>
+                    <p class="mb-0 danger"><strong>Attention: toutes vos informations (profil, rapports et véhicules) seront supprimés et vous devrez recréer un compte Mileo pour accéder de nouveau à la plateforme.</strong></p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+
+                    {% set requestDeleteUrl = ea_url()
+                    .setController('App\\Controller\\App\\UserAppCrudController')
+                    .setAction('requestDeleteMe')
+                    %}
+
+                    <form method="post" action="{{ requestDeleteUrl }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_me') }}">
+                    <button type="submit" class="btn btn-danger">
+                        Envoyer l’email de confirmation
+                    </button>
+                    </form>
+                </div>
+                </div>
+            </div>

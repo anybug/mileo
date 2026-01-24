@@ -23,7 +23,7 @@ yarn-error.log
 public/.well-known/
 symfony.lock
 composer.lock
-
+.idea/
 ###> phpstan/phpstan ###
 phpstan.neon
 ###< phpstan/phpstan ###

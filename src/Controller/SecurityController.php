@@ -89,12 +89,10 @@ class SecurityController extends AbstractController
                 $request
             );
 
-
-            //return $this->redirectToRoute('home');
         }    
 
 
-        return $this->render('Front/register.html.twig', [
+        return $this->render('security/register.html.twig', [
             'form' => $form->createView(),
         ]);
 
@@ -114,7 +112,7 @@ class SecurityController extends AbstractController
         // last username entered by the user
         $lastUsername = $authenticationUtils->getLastUsername();
 
-        return $this->render('Front/login.html.twig', ['last_username' => $lastUsername, 'error' => $error]);
+        return $this->render('security/login.html.twig', ['last_username' => $lastUsername, 'error' => $error]);
     }
 
     /**

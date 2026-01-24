@@ -312,14 +312,21 @@ class ReportLineAppCrudController extends AbstractCrudController
                 ->generateUrl()
         );
     }
-
-
     
     public function configureFields(string $pageName): iterable
     {
         $entity = $this->getContext()->getEntity()->getInstance();
-        $dateFieldHtmlAttributes = [];
-        if($pageName == Crud::PAGE_EDIT && $entity?->getId()){
+        $currentYear = (int) (new \DateTimeImmutable())->format('Y');
+        $minYear = $currentYear - 10;
+        $maxYear = $currentYear + 1;
+
+        $dateFieldHtmlAttributes = [
+            'min' => sprintf('%d-01-01', $minYear),
+            'max' => sprintf('%d-12-31', $maxYear),
+        ];
+
+        if($pageName == Crud::PAGE_EDIT && $entity?->getId())
+        {
             $firstDayOfMonth = clone $entity->getTravelDate();
             $firstDayOfMonth->modify('first day of this month');
             $lastDayOfMonth = clone $entity->getTravelDate();
@@ -355,17 +362,72 @@ class ReportLineAppCrudController extends AbstractCrudController
             ])
             ->onlyOnForms()
             ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
-            ->setChoices(function (){
-            $adresses = $this->getUser()->getUserAddresses();
-            if(count($adresses) != 0){
-                foreach ($adresses as $adress) {
-                    $choices[$adress->__toString()] = $adress->getAddress();
+            ->setChoices(function () {
+                $me = $this->getUser();
+
+                if (!($me instanceof \App\Entity\User)) {
+                    return ["Vous n'avez pas d'adresse favorite" => ""];
                 }
-                return $choices;
-            } else {
-                return ["Vous n'avez pas d'adresse favorite" => ""];
-            }
-        });
+
+                $myChoices = [];
+                $groupChoices = [];
+
+                // --- 1) Mes adresses (EN HAUT) ---
+                foreach ($me->getUserAddresses() as $adress) {
+                    $label = (string) $adress->getAddress();
+                    $value = (string) $adress->getAddress();
+
+                    $finalLabel = $label;
+                    $i = 2;
+                    while (isset($myChoices[$finalLabel]) || isset($groupChoices[$finalLabel])) {
+                        $finalLabel = $label.' ('.$i++.')';
+                    }
+
+                    $myChoices[$finalLabel] = $value;
+                }
+
+                // --- 2) Groupe (manager + membres) ---
+                $myManager = $me->getManagedBy();
+                $qb = $this->entityManager->getRepository(\App\Entity\User::class)->createQueryBuilder('u');
+
+                if ($myManager instanceof \App\Entity\User) {
+                    $mgrId = $myManager->getId();
+                    $qb->andWhere('IDENTITY(u.managedBy) = :mgrId OR u.id = :mgrId')
+                    ->setParameter('mgrId', $mgrId);
+                } else {
+                    $qb->andWhere('u = :me OR u.managedBy = :me')
+                    ->setParameter('me', $me);
+                }
+
+                /** @var \App\Entity\User[] $users */
+                $users = $qb->orderBy('u.id', 'ASC')->getQuery()->getResult();
+
+                foreach ($users as $u) {
+                    if ($u->getId() === $me->getId()) {
+                        continue; 
+                    }
+
+                    foreach ($u->getUserAddresses() as $adress) {
+                        $label = (string) $adress->getAddress();
+                        $value = (string) $adress->getAddress();
+
+                        $finalLabel = $label;
+                        $i = 2;
+                        while (isset($groupChoices[$finalLabel]) || isset($myChoices[$finalLabel])) {
+                            $finalLabel = $label.' ('.$i++.')';
+                        }
+
+                        $groupChoices[$finalLabel] = $value;
+                    }
+                }
+
+                $choices = $myChoices + $groupChoices;
+
+                return count($choices) ? $choices : ["Vous n'avez pas d'adresse favorite" => ""];
+            });
+
+
+
         yield TextField::new('startAdress','Départ')
                 ->setFormTypeOptions([
                     'attr' => ['class'=>'autocomplete lines_start'],

@@ -1,7 +1,8 @@
 # config/packages/twig.yaml
 twig:
     default_path: '%kernel.project_dir%/templates'
-    globals: ~
+    globals: 
+        app_public_url: '%app_public_url%'
     date:
         timezone: 'Europe/Paris'
     number_format:

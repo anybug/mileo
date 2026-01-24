@@ -1,6 +1,6 @@
 <body>
     <p>Bonjour {{ user.getFirstName() }} {{ user.getLastName() }},</p>
-    <p>Votre abonnement Mileo arrive à expiration dans 1 mois, ce qui signifie qu'il ne sera plus valide à partir du {{ user.getSubscription().getSubscriptionEnd()|format_datetime(locale='fr',pattern="dd MMMM YYYY")}}, et que vous ne pourrez plus profiter pleinement de l'application.</p>
+    <p>Votre abonnement Mileo arrive à expiration dans 1 mois et ne sera plus valide à partir du <strong>{{ end|format_datetime(locale='fr',pattern="dd MMMM YYYY") }}</strong>, vous ne pourrez plus profiter pleinement de l'application.</p>
     <p>Vous pouvez renouveler votre abonnement en cliquant sur le lien ci-dessous :</p>
     <p><a href="{{ url }}">Renouveler mon abonnement</a></p>
     <p>Nous vous remercions pour votre fidélité et restons à votre disposition pour tout complément d’information.</p>

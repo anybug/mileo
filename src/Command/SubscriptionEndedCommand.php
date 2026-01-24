@@ -38,7 +38,7 @@ class SubscriptionEndedCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Envoie un email aux utilisateurs dont l’abonnement est expiré (non valide).')
+            ->setDescription('Envoi un email aux utilisateurs dont l’abonnement est expiré (non valide).')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Ne pas envoyer, afficher seulement')
         ;
     }
@@ -73,24 +73,18 @@ class SubscriptionEndedCommand extends Command
                 ->generateUrl();
 
             $url = str_replace('http', 'https', $url);
-            $url = str_replace('localhost', $_ENV['DOMAIN_NAME'] ?? 'localhost', $url);
+            $url = str_replace('localhost', $_ENV['APP_PUBLIC_URL'] ?? 'localhost', $url);
 
             // Sujet (diff selon plan)
             $planName = $subscription->getPlan()?->getName() ?? 'Free';
 
-            $subject = 'Votre abonnement Mileo est terminé';
-            if (stripos($planName, 'mensuel') !== false) {
-                $subject = 'Votre abonnement Mileo (Pro mensuel) est terminé';
-            } elseif (stripos($planName, 'annuel') !== false) {
-                $subject = 'Votre abonnement Mileo (Pro annuel) est terminé';
-            } elseif (stripos($planName, 'free') !== false) {
-                $subject = 'Votre période gratuite Mileo est terminée';
-            }
+            $subject = 'Votre abonnement Mileo est arrivé à expiration';
 
             $email = (new TemplatedEmail())
                 ->to(new Address($user->getEmail()))
+                ->bcc($_ENV['ADMIN_EMAIL'])
                 ->subject($subject)
-                ->htmlTemplate('Emails/subscriptionEnded.html.twig')
+                ->htmlTemplate('Emails/subscriptionExpired.html.twig')
                 ->context([
                     'user' => $user,
                     'url' => $url,
