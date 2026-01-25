@@ -14,8 +14,11 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use EasyAdminFriends\EasyAdminDashboardBundle\Controller\DefaultController as EasyAdminDashboard;
+use EasyAdminFriends\EasyAdminDashboardBundle\Service\EasyAdminDashboard;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\ExpressionLanguage\Expression;
 
+#[IsGranted(new Expression('is_granted("ROLE_ADMIN")'))]
 class DashboardController extends AbstractDashboardController
 {
     private $easyAdminDashboard;
@@ -25,13 +28,14 @@ class DashboardController extends AbstractDashboardController
         $this->easyAdminDashboard = $easyAdminDashboard;
     }
 
+    /** Cette interface "Super Admin" est en version Beta, à utiliser uniquement à des fins logistiques (ex: factures) */
+
     #[Route(path: '/admin', name: 'admin')]
     public function index(): Response
     {
         //return parent::index();
         return $this->render('@EasyAdminDashboard/Default/index.html.twig', [
-            'dashboard' => $this->easyAdminDashboard->generateDashboardValues(),
-            'layout_template_path' => $this->easyAdminDashboard->getLayoutTemplate()
+            'dashboard' => $this->easyAdminDashboard->getDashboard(),
         ]);
     }
 
