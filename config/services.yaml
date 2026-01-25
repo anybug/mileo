@@ -42,10 +42,6 @@ services:
     Payum\Core\Payum:
         alias: "payum"
 
-    EasyAdminFriends\EasyAdminDashboardBundle\Controller\DefaultController:
-        public: true
-        tags: ['doctrine']
-
     App\EventListener\ReportLineListener:
         tags:
             - name: 'doctrine.event_listener'
