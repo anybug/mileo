@@ -92,13 +92,24 @@ class ManagerProfileCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $entityManager, $entityInstance): void
     {
-        $this->encodePassword($entityInstance);
-        parent::persistEntity($entityManager, $entityInstance);
+        /* should not be called */
+
+        return;
+        //$this->encodePassword($entityInstance);
+        //parent::persistEntity($entityManager, $entityInstance);
     }
 
     public function updateEntity(EntityManagerInterface $entityManager, $entityInstance): void
     {
         /** TODO: update members profile: copy company and balance period */
+        //dd($entityInstance->getBalanceStartPeriod());
+
+        foreach($entityInstance->getMembers() as $member)
+        {
+            $member->setBalanceStartPeriod($entityInstance->getBalanceStartPeriod());
+            $member->setCompany($entityInstance->getCompany());
+        }
+
         $this->encodePassword($entityInstance);
         parent::updateEntity($entityManager, $entityInstance);
     }
@@ -143,6 +154,7 @@ class ManagerProfileCrudController extends AbstractCrudController
 
         yield ChoiceField::new('balanceStartPeriod')
             ->setColumns('col-12')
+            ->setHelp('Modifier votre période fiscale modifie également celle de vos collaborateurs')
             ->setChoices(fn () => [
                 'Janvier' => 'January',
                 'Février' => 'February',

@@ -93,6 +93,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?self $managedBy = null;
 
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'managedBy')]
+    private $members;
+
     #[ORM\Column(type: 'string', length: 64, nullable: true)]
     private ?string $deleteToken = null;
 
@@ -136,6 +139,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->reports = new ArrayCollection();
         $this->orders = new ArrayCollection();
         $this->userAddresses = new ArrayCollection();
+        $this->members = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -689,6 +693,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setDeleteTokenRequestedAt(?\DateTimeImmutable $deleteTokenRequestedAt): static
     {
         $this->deleteTokenRequestedAt = $deleteTokenRequestedAt;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getMembers(): Collection
+    {
+        return $this->members;
+    }
+
+    public function addMember(User $member): static
+    {
+        if (!$this->members->contains($member)) {
+            $this->members->add($member);
+            $member->setManagedBy($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMember(User $member): static
+    {
+        if ($this->members->removeElement($member)) {
+            // set the owning side to null (unless already changed)
+            if ($member->getManagedBy() === $this) {
+                $member->setManagedBy(null);
+            }
+        }
 
         return $this;
     }

@@ -51,7 +51,7 @@ class TeamUserCrudController extends AbstractCrudController
 
     public function configureActions(Actions $actions): Actions
     {
-        $impersonate = Action::new('impersonate', 'Se connecter', 'fa fa-user-secret')
+        $impersonate = Action::new('impersonate', 'Se connecter', 'fa-solid fa-person-walking-arrow-right')
             ->linkToUrl(function (User $user) {
                 return $this->generateUrl('app', [
                     '_switch_user' => $user->getEmail(),
@@ -127,10 +127,6 @@ class TeamUserCrudController extends AbstractCrudController
             $entityInstance->setCompany($me->getCompany());
             $entityInstance->setBalanceStartPeriod($me->getBalanceStartPeriod());
 
-            if (!$entityInstance->getBalanceStartPeriod()) {
-                $entityInstance->setBalanceStartPeriod($me->getBalanceStartPeriod());
-            }
-
             $this->copySubscriptionFromManager($entityInstance, $me);
 
             $this->encodePassword($entityInstance);
@@ -181,15 +177,16 @@ class TeamUserCrudController extends AbstractCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        if ($pageName === Crud::PAGE_INDEX) {
+        if ($pageName === Crud::PAGE_INDEX || $pageName === Crud::PAGE_DETAIL) {
             yield Field::new('first_name', 'Prénom');
             yield Field::new('last_name', 'Nom');
             yield EmailField::new('email', 'E-mail');
             return;
         }
 
-        if ($pageName === Crud::PAGE_NEW) {
-            yield FormField::addPanel('Identifiants')->setIcon('fa fa fa-user');
+        if ($pageName === Crud::PAGE_NEW || $pageName === Crud::PAGE_EDIT) {
+            yield FormField::addColumn(6);
+            yield FormField::addFieldset('Identifiants')->setIcon('fa fa fa-user');
             yield Field::new('email', 'E-mail address');
 
             yield Field::new('plainPassword')
@@ -201,34 +198,14 @@ class TeamUserCrudController extends AbstractCrudController
                     'second_options' => ['label' => 'Password (confirmation)'],
                     'invalid_message' => 'Les mots de passe ne correspondent pas.',
                 ]);
-
-            yield FormField::addPanel('Informations personnelles')->setIcon('fa fa fa-id-card');
+    
+            yield FormField::addColumn(6);
+            yield FormField::addFieldset('Informations personnelles')->setIcon('fa fa fa-id-card');
             yield Field::new('first_name')->setFormTypeOptions(['required' => true]);
             yield Field::new('last_name')->setFormTypeOptions(['required' => true]);
 
             return;
         }
 
-        if ($pageName === Crud::PAGE_EDIT) {
-            yield FormField::addPanel('Identifiants')->setIcon('fa fa fa-user');
-            yield Field::new('email', 'E-mail address');
-
-            yield Field::new('plainPassword')
-                ->setFormType(RepeatedType::class)
-                ->setFormTypeOptions([
-                    'required' => false,
-                    'type' => PasswordType::class,
-                    'first_options' => ['label' => 'Password'],
-                    'second_options' => ['label' => 'Password (confirmation)'],
-                    'invalid_message' => 'Les mots de passe ne correspondent pas.',
-                ])
-                ->setHelp('Laisse vide si tu ne veux pas changer le mot de passe.');
-
-            yield FormField::addPanel('Informations personnelles')->setIcon('fa fa fa-id-card');
-            yield Field::new('first_name')->setFormTypeOptions(['required' => true]);
-            yield Field::new('last_name')->setFormTypeOptions(['required' => true]);
-
-            return;
-        }
     }
 }

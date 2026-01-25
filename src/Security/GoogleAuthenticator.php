@@ -55,8 +55,6 @@ class GoogleAuthenticator extends OAuth2Authenticator
             new UserBadge($email, function ($userIdentifier) use ($googleUser, $googleId) {
                 $user = $this->em->getRepository(User::class)->findOneBy(['email' => $userIdentifier]);
 
-                $isNew = false;
-
                 if (!$user) {
                     $user = new User();
                     $user->setEmail($googleUser->getEmail());
@@ -83,11 +81,19 @@ class GoogleAuthenticator extends OAuth2Authenticator
 
                     $this->mailer->send($email);
 
-                     if ($isNew || !$user->getSubscription()) {
+                     if (!$user->getSubscription()) {
                         $this->eventDispatcher->dispatch(
                             new UserFirstLoginEvent($user)
                         );
                     }
+                }else{
+                    /** cas où le user s'était inscrit avec son adresse Gmail sans passer par le Google authenticator
+                     * on met à jour son profil à la volée
+                     */
+                    $user->setAuthProvider('google');
+                    $user->setGoogleId($googleId);
+                    $this->em->persist($user);
+                    $this->em->flush();
                 }
 
                 return $user;

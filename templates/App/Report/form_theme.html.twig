@@ -6,14 +6,14 @@
     {% set allows_deleting_items = form_parent(form).vars.allow_delete|default(false) %}
     {% set render_expanded = form_parent(form).vars.ea_crud_form.ea_field.customOptions.get('renderExpanded') ?? false %}
     {% set delete_item_button %}
-        <button type="button" class="btn-link btn-link-danger field-collection-delete-button"
+        <button type="button" class="btn btn-outline-danger fs-3 text-danger field-collection-delete-button"
                 title="{{ 'action.remove_item'|trans({}, 'EasyAdminBundle') }}">
             <i class="far fa-trash-alt"></i>
         </button>
     {% endset %}
 
     {% set copy_item_button %}
-        <button type="button" class="btn-link copy_link field-collection-copy-button"
+        <button type="button" class="btn btn-outline-primary fs-3 text-primary copy_link field-collection-copy-button"
             title="{{ "Duplicate travel"|trans }}">
             <i class="far fa-copy"></i>
         </button>
