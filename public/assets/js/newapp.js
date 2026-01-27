@@ -128,80 +128,8 @@ $(document).ready(function () {
         requestDependentChange($(this), '.vehicule_scale', url_vehicule_change_power);
     });
 
-    // modal new report
-
-    /*$(document).on('click', '.new-report-action', function (e) {
-        e.preventDefault();
-        let $this = $(this);
-        let $action = $this.attr('href');
-        $.ajax({
-            method: 'POST',
-            dataType: 'html',
-            url: $action,
-            beforeSend: function () {
-                $this.prop('disabled', 'disabled');
-                $this.append(' <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-            },
-            success: function (data) {
-                $('.spinner-border').remove();
-                var modalContent = $(data).find('.content-wrapper');
-                modalContent.find('form').attr('action', $action);
-
-                doModal('Créer un rapport mensuel', modalContent.html(), null); ///'style="height: 20em;"'
-                $(".resizer-handler").remove();
-                $("#Report_Year_month").hide().val(1);
-                $("#Report_Year_day").hide().val(1);
-
-            },
-            error: function(xhrRequest) {
-                if(xhrRequest.responseText !== null) {
-                    var data = jQuery.parseHTML(xhrRequest.responseText);
-                    $('.spinner-border').remove();
-                    var modalContent = $(data).find('.content-wrapper');
-                    modalContent.find('form').attr('action', $action);
-    
-                    doModal('Créer un rapport mensuel', modalContent.html(), null); ///'style="height: 20em;"'
-                    $(".resizer-handler").remove();
-                    $("#Report_Year_month").hide().val(1);
-                    $("#Report_Year_day").hide().val(1);
-                }
-            }
-        });
-
-        $(document).on('submit', $('#dynamicModal').find('form'), function (e) {
-            e.preventDefault();
-            let $form = $('#dynamicModal').find('form');
-            let $action = $(".new-report-action").attr('href');
-            let $data = $form.serializeArray();
-            let $btn = $('#dynamicModal').find('.btn-primary');
-            $btn.attr('name', "NewReportAjax")
-            $data.push({ name: $btn.attr('name'), value: $btn.val() });
-            console.log($btn.val());
-            $.ajax({
-                method: 'POST',
-                dataType: 'html',
-                url: $action,
-                data: $data,
-
-                success: function (html) {
-                    //console.log(html);
-                    if (html.indexOf("http") == 0) {
-                        window.location.href = html;
-                    } else {
-                        $('#dynamicModal').find('.modal-body').replaceWith($(html).find('.content-wrapper'));
-                        $('#dynamicModal').find('.content-wrapper').removeClass('content-wrapper').addClass('modal-body')
-                        $(".resizer-handler").remove();
-                        $("#Report_Year_month").hide().val(1);
-                        $("#Report_Year_day").hide().val(1);
-                    }
-                }
-            });
-        });
-
-    });*/
 
     // favories Reportline
-
     $(".report_favories").parent().parent().parent().css("display", "none");
     $(".report_favories").find("input:first").prop("checked", true);
 
@@ -218,7 +146,6 @@ $(document).ready(function () {
         let $this = $(this);
         let line = $this.parent().parent().parent().parent().parent();
 
-
         favoriteModal($this, url_popup_fav_lines_start, line.find('.report_lines_start'), line);
 
     });
@@ -226,8 +153,6 @@ $(document).ready(function () {
     $(document).on('click', '.popup-fav-end', function (e) {
         e.preventDefault();
         let $this = $(this);
-
-
 
         favoriteModal($this, url_popup_fav_end, $('form').find('.lines_end'), null);
 
@@ -237,7 +162,6 @@ $(document).ready(function () {
         e.preventDefault();
         let $this = $(this);
         let line = $this.parent().parent().parent().parent().parent();
-
 
         favoriteModal($this, url_popup_fav_lines_end, line.find('.report_lines_end'), line);
 
@@ -531,7 +455,7 @@ function favoriteModal(btn, urlAjax, classToChange, line) {
                     let arv = line.find('.report_lines_end');
                     console.log(distance);
                     delay(function () {
-                        console.log(distance);
+                        //console.log(distance);
                         calculDistance(line, distance, dpt, arv)
                     }, 800);
                 } else {

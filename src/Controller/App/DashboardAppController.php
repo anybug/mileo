@@ -116,9 +116,9 @@ class DashboardAppController extends AbstractDashboardController
     public function index(): Response
     {
         /** Quick & dirty for beta tests */
-        if ($this->isGranted('ROLE_MANAGER')) {
+        /*if ($this->isGranted('ROLE_MANAGER')) {
             return $this->redirectToRoute('manager_dashboard');
-        }
+        }*/
 
         $request = $this->container->get('request_stack')->getCurrentRequest();
         $step2 = $request->query->get('step2') ?? false;
@@ -319,16 +319,16 @@ class DashboardAppController extends AbstractDashboardController
         yield MenuItem::linktoDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Travels');
-        yield MenuItem::linkToCrud('My travels', 'fa fa-road', ReportLine::class);
-        yield MenuItem::linkToCrud('Monthly reports', 'fa fa-road', Report::class);
+        yield MenuItem::linkToCrud('My travels', 'fa fa-road', ReportLine::class)->setController(ReportLineAppCrudController::class);
+        yield MenuItem::linkToCrud('Monthly reports', 'fa fa-road', Report::class)->setController(ReportAppCrudController::class);
 
         yield MenuItem::section('Parameters');
         yield MenuItem::linkToCrud('Profile', 'fa fa-id-card', User::class)->setController(UserAppCrudController::class);
         yield MenuItem::linkToCrud('My vehicules', 'fa fa-car', Vehicule::class)->setController(VehiculeAppCrudController::class);
-        yield MenuItem::linkToCrud('My addresses', 'fa fa-map-marker-alt', UserAddress::class);
+        yield MenuItem::linkToCrud('My addresses', 'fa fa-map-marker-alt', UserAddress::class)->setController(AddressesAppCrudController::class);
 
         if ($planName !== 'free') {
-            yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class);
+            yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class)->setController(OrderAppCrudController::class);
         }
         
         yield MenuItem::linkToCrud('Scales', 'fa-solid fa-table', Scale::class)->setController(ScaleAppCrudController::class);

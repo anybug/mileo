@@ -13,6 +13,7 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Controller\App\Filter\LineDateFilter;
+use App\Entity\UserAddress;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
@@ -320,6 +321,9 @@ class ReportLineAppCrudController extends AbstractCrudController
         $minYear = $currentYear - 10;
         $maxYear = $currentYear + 1;
 
+        /** @var App\Entity\User */
+        $me = $this->getUser();
+
         $dateFieldHtmlAttributes = [
             'min' => sprintf('%d-01-01', $minYear),
             'max' => sprintf('%d-12-31', $maxYear),
@@ -350,7 +354,46 @@ class ReportLineAppCrudController extends AbstractCrudController
             ;
         yield FormField::addRow();
         yield FormField::addPanel('Travel information')->setIcon('fa fa-car');
-        yield ChoiceField::new('favories','adresse favorite')
+
+        /** Compte individuel: quelques adresses en bouton radion */
+        if(!$me->getManagedBy()){
+            $addresses = $this->getUser()->getFormattedUserAddresses();
+            yield ChoiceField::new('favories','adresse favorite')
+                ->setFormTypeOptions([
+                    'attr' => ['class'=>'report_favories'],
+                    'expanded' => true,
+                    'mapped' => false,
+                    'required' => true,
+                    'choice_attr' => function($choice, $key, $value) {
+                        return ['class' => 'report_favories_choice'];
+                    }
+                ])
+                ->onlyOnForms()
+                ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
+                ->setChoices(count($addresses)>0 ? $addresses : ["Vous n'avez pas d'adresse favorite" => ""])
+            ;
+        }else{
+            $addresses = $this->getUser()->getFormattedGroupAddresses();
+            yield ChoiceField::new('favories','adresse favorite')
+                ->setFormTypeOptions([
+                    'attr' => ['class'=>'report_favories'],
+                    'expanded' => true,
+                    'mapped' => false,
+                    'required' => true,
+                    'choice_attr' => function($choice, $key, $value) {
+                        return ['class' => 'report_favories_choice'];
+                    }
+                ])
+                ->onlyOnForms()
+                ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
+                ->setChoices(count($addresses)>0 ? $addresses : ["Vous n'avez pas d'adresse favorite" => ""])
+            ;
+
+        }
+        
+
+        /** compte équipe: liste déroulante avec adresses en perso en haut de liste */
+        /*yield ChoiceField::new('favories','adresse favorite')
             ->setFormTypeOptions([
                 'attr' => ['class'=>'report_favories'],
                 'expanded' => true,
@@ -374,7 +417,7 @@ class ReportLineAppCrudController extends AbstractCrudController
 
                 // --- 1) Mes adresses (EN HAUT) ---
                 foreach ($me->getUserAddresses() as $adress) {
-                    $label = (string) $adress->getAddress();
+                    $label = (string) $adress->getName();
                     $value = (string) $adress->getAddress();
 
                     $finalLabel = $label;
@@ -399,7 +442,6 @@ class ReportLineAppCrudController extends AbstractCrudController
                     ->setParameter('me', $me);
                 }
 
-                /** @var \App\Entity\User[] $users */
                 $users = $qb->orderBy('u.id', 'ASC')->getQuery()->getResult();
 
                 foreach ($users as $u) {
@@ -425,7 +467,7 @@ class ReportLineAppCrudController extends AbstractCrudController
 
                 return count($choices) ? $choices : ["Vous n'avez pas d'adresse favorite" => ""];
             });
-
+        */
 
 
         yield TextField::new('startAdress','Départ')

@@ -7,6 +7,12 @@
             href="{{ path('manager_dashboard', {'_switch_user': '_exit'}) }}">
             <i class="fa fa-user-check"></i> Retourner à mon interface manager
         </a>
+
+        {% elseif is_granted('ROLE_MANAGER') %}
+        <a class="btn btn-success"
+            href="{{ path('manager_dashboard') }}">
+            <i class="fa fa-user-check"></i> Aller à mon interface manager
+        </a>
         {% endif %}
 
         {{ parent() }}

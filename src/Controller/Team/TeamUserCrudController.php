@@ -61,6 +61,11 @@ class TeamUserCrudController extends AbstractCrudController
         return $actions
             ->add(Crud::PAGE_INDEX, $impersonate)
             ->remove(Crud::PAGE_EDIT, Action::SAVE_AND_CONTINUE)
+            ->update(Crud::PAGE_INDEX, Action::DELETE, function (Action $action) {
+                return $action->displayIf(function ($entity) {
+                    return $entity != $this->getUser();
+                });
+            })
             ->add(Crud::PAGE_NEW, Action::INDEX)
             ->add(Crud::PAGE_EDIT, Action::INDEX);
     }
@@ -77,6 +82,7 @@ class TeamUserCrudController extends AbstractCrudController
         $me = $this->getUser();
 
         $qb->andWhere('entity.managedBy = :me')
+            ->orWhere('entity = :me')
             ->setParameter('me', $me);
 
         return $qb;

@@ -141,5 +141,17 @@
     document.addEventListener('turbo:load', initEmptyState);
   })();
   </script>
+
+  <script>
+    function initAutocomplete() {
+        const inputs = document.querySelectorAll('.autocomplete');
+        const options = { componentRestrictions: { country: 'fr' } };
+
+        inputs.forEach((input) => {
+            const autocomplete = new google.maps.places.Autocomplete(input, options);
+            autocomplete.inputId = input.id;
+        });
+    }
+  </script>
 {% endblock %}
 

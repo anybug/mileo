@@ -218,6 +218,7 @@
       loadPowersFromType(typeValue, currentPowerId, currentScaleId);
     }
 
+
     document.addEventListener('change', (e) => {
       if (e.target && e.target.matches('input[type="radio"][name$="[type]"]')) {
         if (e.target.checked) loadPowersFromType(e.target.value);
@@ -231,4 +232,17 @@
     document.addEventListener('turbo:load', initEditState);
   })();
   </script>
+
+  <script>
+      function initAutocomplete() {
+          const inputs = document.querySelectorAll('.autocomplete');
+          const options = { componentRestrictions: { country: 'fr' } };
+
+          inputs.forEach((input) => {
+              const autocomplete = new google.maps.places.Autocomplete(input, options);
+              autocomplete.inputId = input.id;
+          });
+      }
+  </script>
+
 {% endblock %}

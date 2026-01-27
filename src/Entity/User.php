@@ -89,7 +89,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: UserAddress::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist', 'remove'])]
     private $userAddresses;
 
-    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: "members")]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?self $managedBy = null;
 
@@ -353,7 +353,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserAddresses(): Collection
     {
-        return $this->userAddresses;
+        $criteria = new Criteria();
+        $criteria->orderBy(['name' => Criteria::ASC]);
+
+        return $this->userAddresses->matching($criteria);
+    }
+
+    public function getFormattedUserAddresses(): array
+    {
+        $addresses = [];
+        foreach ($this->getUserAddresses() as $address) {
+            //$addresses[(string) $address->__toString()] = (string) $address->getAddress();
+            $addresses[(string) trim($address->__toString())] = (string) trim($address->getAddress());
+        }
+        return $addresses;
     }
 
     public function addUserAddress(UserAddress $userAddress): self
@@ -376,6 +389,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $this;
+    }
+
+    public function getGroupAddresses(): Collection
+    {
+        $addresses = $this->getManagedBy()->getUserAddresses();
+
+        return $addresses;
+
+    }
+
+    public function getFormattedGroupAddresses(): array
+    {
+        return array_merge($this->getFormattedUserAddresses(), $this->getManagedBy()->getFormattedUserAddresses());
     }
 
     public function getLastReport()
