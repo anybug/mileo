@@ -314,6 +314,8 @@ class DashboardAppController extends AbstractDashboardController
 
         if ($user && $user->getSubscription() && $user->getSubscription()->getPlan()) {
             $planName = strtolower(trim((string) $user->getSubscription()->getPlan()->getName()));
+        }else{
+            $planName = false;
         }
 
         yield MenuItem::linktoDashboard('Dashboard', 'fa fa-home');
@@ -327,7 +329,7 @@ class DashboardAppController extends AbstractDashboardController
         yield MenuItem::linkToCrud('My vehicules', 'fa fa-car', Vehicule::class)->setController(VehiculeAppCrudController::class);
         yield MenuItem::linkToCrud('My addresses', 'fa fa-map-marker-alt', UserAddress::class)->setController(AddressesAppCrudController::class);
 
-        if ($planName !== 'free') {
+        if ($planName && $planName !== 'free') {
             yield MenuItem::linkToCrud('My invoices', 'fa-solid fa-file-invoice', Order::class)->setController(OrderAppCrudController::class);
         }
         
