@@ -101,7 +101,7 @@ class TeamUserCrudController extends AbstractCrudController
     {
         /** @var User $me */
         $me = $this->getUser();
-        
+
         $member = new $entityFqcn;
         $member->setCompany($me->getCompany());
         $member->setBalanceStartPeriod($me->getBalanceStartPeriod());
@@ -206,6 +206,7 @@ class TeamUserCrudController extends AbstractCrudController
             yield Field::new('first_name', 'Prénom');
             yield Field::new('last_name', 'Nom');
             yield EmailField::new('email', 'E-mail');
+            yield DateTimeField::new('last_login', 'Dernière connexion')->hideOnForm();
             return;
         }
 
@@ -246,8 +247,6 @@ class TeamUserCrudController extends AbstractCrudController
                     'invalid_message' => 'Les mots de passe ne correspondent pas.',
             ]);
             yield BooleanField::new('is_active', 'Profil activé')->setHelp("Si désactivé, l'utilisateur ne peut pas se connecter à la plateforme");
-            
-            yield DateTimeField::new('last_login')->hideOnForm();
 
             return;
         }
