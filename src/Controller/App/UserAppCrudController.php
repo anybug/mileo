@@ -100,6 +100,7 @@ class UserAppCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $entityManager, $entityInstance): void
     {
+        /* should not be called from here */
         $this->encodePassword($entityInstance);
         parent::persistEntity($entityManager, $entityInstance);
     }
@@ -120,10 +121,42 @@ class UserAppCrudController extends AbstractCrudController
     
     public function configureFields(string $pageName): iterable
     {
-        if(!$this->getUser()->getGoogleId())
-        {
-            yield FormField::addPanel('Identifiants')->setIcon('fa fa fa-user')->setCssClass('col-sm-12 col-lg-6 col-xxl-6');
-            yield Field::new('email', 'E-mail address')->setColumns('col-12');
+        yield FormField::addColumn(6);
+        yield FormField::addFieldset('Informations personnelles')->setIcon('fa fa fa-id-card');
+        yield Field::new('first_name')
+            ->setFormTypeOptions([
+                'required' => true,
+                ])
+            ->setColumns(6);
+        yield Field::new('last_name')
+            ->setFormTypeOptions([
+                'required' => true,
+            ])
+            ->setColumns(6);
+        yield Field::new('company')
+            ;
+        yield ChoiceField::new('balanceStartPeriod')
+            
+            ->setChoices(function (){
+                return ['Janvier' => 'January','Février' => 'February','Mars' => 'March','Avril' => 'April','Mai' => "May",'Juin' => 'June','Juillet' => 'July','Août' => 'August','Septembre' => 'September','Octobre' => "October",'Novembre' => 'November','Décembre' => "December"];}
+            )
+            ->setRequired(true)
+            ->setHelp($this->getUser()->getReports() ? 'Attention: vous avez déjà créé des rapports ! Les calculs étant basés sur une année fiscale, modifier la période rendra le montant des rapports annuels passés invalide.' : '')
+            ;
+
+            yield FormField::addColumn(6);
+            yield FormField::addFieldset('Identifiants')->setIcon('fa fa fa-user');
+            if($this->getUser()->getGoogleId())
+            {
+                yield Field::new('email', 'E-mail address')->setFormTypeOptions([
+                    'attr' => ['readonly' => true],
+                    'mapped' => false,
+                    'data' => $this->getUser()->getUserIdentifier(),
+                    'help' => 'Vous ne pouvez pas modifier votre adresse e-mail car vous êtes connecté via Google'
+                ]);
+            }else{
+                yield Field::new('email', 'E-mail address');  
+            }
             yield Field::new('plainPassword')
                 ->setFormType(RepeatedType::class)
                 ->setFormTypeOptions([
@@ -135,27 +168,8 @@ class UserAppCrudController extends AbstractCrudController
                     'first_options' => ['label' => 'Password'],
                     'second_options' => ['label' => 'Password (confirmation)'],
                     'invalid_message' => 'Les mots de passe ne correspondent pas.'
-                ])->setColumns('col-12');
-        }
-
-        yield FormField::addPanel('Informations personnelles')->setIcon('fa fa fa-id-card')->setCssClass('col-sm-12 col-lg-6 col-xxl-6');
-        yield Field::new('first_name')
-            ->setFormTypeOptions([
-                'required' => true,
-                ])
-            ->setColumns('col-12');
-        yield Field::new('last_name')
-            ->setFormTypeOptions([
-                'required' => true,
-            ])
-            ->setColumns('col-12');
-        yield Field::new('company')
-            ->setColumns('col-12');
-        yield ChoiceField::new('balanceStartPeriod')
-            ->setColumns('col-12')
-            ->setChoices(function (){
-                return ['Janvier' => 'January','Février' => 'February','Mars' => 'March','Avril' => 'April','Mai' => "May",'Juin' => 'June','Juillet' => 'July','Août' => 'August','Septembre' => 'September','Octobre' => "October",'Novembre' => 'November','Décembre' => "December"];})
-                ;
+                ]);
+        
     }
     
     public function subscriptionForm(Request $request, EntityManagerInterface $manager)

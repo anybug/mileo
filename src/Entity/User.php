@@ -72,6 +72,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
+    #[ORM\Column]
+    private bool $active = true;
+
     public $captcha;
 
     #[ORM\OneToMany(targetEntity: Vehicule::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
@@ -749,6 +752,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $member->setManagedBy(null);
             }
         }
+
+        return $this;
+    }
+
+    public function isActive(): ?bool
+    {
+        return $this->active;
+    }
+
+    public function setActive(bool $active): static
+    {
+        $this->active = $active;
 
         return $this;
     }

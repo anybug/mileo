@@ -18,10 +18,11 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            user_checker: App\Security\UserChecker
             custom_authenticators:
                 - App\Security\LoginAuthenticator
                 - App\Security\GoogleAuthenticator
-            entry_point: App\Security\LoginAuthenticator  
+            entry_point: App\Security\LoginAuthenticator
             
             #form_login:
             #    login_path: security_login

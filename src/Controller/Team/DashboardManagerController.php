@@ -33,6 +33,13 @@ class DashboardManagerController extends AbstractDashboardController
             ->disableDarkMode();
     }
 
+    public function configureCrud(): Crud
+    {
+        return Crud::new()
+            ->showEntityActionsInlined()
+        ;
+    }
+
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');

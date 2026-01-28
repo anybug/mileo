@@ -4,25 +4,28 @@ namespace App\Controller\Team;
 
 use App\Entity\User;
 use App\Entity\Subscription;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_MANAGER')]
 class TeamUserCrudController extends AbstractCrudController
@@ -67,7 +70,13 @@ class TeamUserCrudController extends AbstractCrudController
                 });
             })
             ->add(Crud::PAGE_NEW, Action::INDEX)
-            ->add(Crud::PAGE_EDIT, Action::INDEX);
+            ->add(Crud::PAGE_EDIT, Action::INDEX)
+            ->update(Crud::PAGE_INDEX, Action::EDIT, function (Action $action) {
+                return $action->displayIf(function ($entity) {
+                    return $entity != $this->getUser();
+                });
+            })
+            ;
     }
 
     public function createIndexQueryBuilder(
@@ -86,6 +95,18 @@ class TeamUserCrudController extends AbstractCrudController
             ->setParameter('me', $me);
 
         return $qb;
+    }
+
+    public function createEntity(string $entityFqcn)
+    {
+        /** @var User $me */
+        $me = $this->getUser();
+        
+        $member = new $entityFqcn;
+        $member->setCompany($me->getCompany());
+        $member->setBalanceStartPeriod($me->getBalanceStartPeriod());
+
+        return $member;
     }
 
     public function edit(AdminContext $context)
@@ -130,8 +151,6 @@ class TeamUserCrudController extends AbstractCrudController
 
             $entityInstance->setManagedBy($me);
             $entityInstance->setRoles(['ROLE_USER']);
-            $entityInstance->setCompany($me->getCompany());
-            $entityInstance->setBalanceStartPeriod($me->getBalanceStartPeriod());
 
             $this->copySubscriptionFromManager($entityInstance, $me);
 
@@ -192,9 +211,31 @@ class TeamUserCrudController extends AbstractCrudController
 
         if ($pageName === Crud::PAGE_NEW || $pageName === Crud::PAGE_EDIT) {
             yield FormField::addColumn(6);
-            yield FormField::addFieldset('Identifiants')->setIcon('fa fa fa-user');
-            yield Field::new('email', 'E-mail address');
-
+            yield FormField::addFieldset('Informations personnelles')->setIcon('fa fa fa-id-card');
+            yield Field::new('first_name')->setFormTypeOptions(['required' => true])->setColumns(6);
+            yield Field::new('last_name')->setFormTypeOptions(['required' => true])->setColumns(6);
+            yield Field::new('company');
+            yield ChoiceField::new('balanceStartPeriod')
+                ->setColumns('col-12')
+                //->setHelp('Modifier votre période fiscale modifie également celle de vos collaborateurs')
+                ->setChoices(fn () => [
+                    'Janvier' => 'January',
+                    'Février' => 'February',
+                    'Mars' => 'March',
+                    'Avril' => 'April',
+                    'Mai' => 'May',
+                    'Juin' => 'June',
+                    'Juillet' => 'July',
+                    'Août' => 'August',
+                    'Septembre' => 'September',
+                    'Octobre' => 'October',
+                    'Novembre' => 'November',
+                    'Décembre' => 'December',
+                ]);
+            
+            yield FormField::addColumn(6);
+            yield FormField::addFieldset('Profil')->setIcon('fa fa fa-user');
+            yield Field::new('email', 'Adresse e-mail')->setHelp('L\'adresse e-mail est utilisée comme nom d\'utilisateur pour se connecter à la plateforme');
             yield Field::new('plainPassword')
                 ->setFormType(RepeatedType::class)
                 ->setFormTypeOptions([
@@ -203,12 +244,10 @@ class TeamUserCrudController extends AbstractCrudController
                     'first_options' => ['label' => 'Password'],
                     'second_options' => ['label' => 'Password (confirmation)'],
                     'invalid_message' => 'Les mots de passe ne correspondent pas.',
-                ]);
-    
-            yield FormField::addColumn(6);
-            yield FormField::addFieldset('Informations personnelles')->setIcon('fa fa fa-id-card');
-            yield Field::new('first_name')->setFormTypeOptions(['required' => true]);
-            yield Field::new('last_name')->setFormTypeOptions(['required' => true]);
+            ]);
+            yield BooleanField::new('is_active', 'Profil activé')->setHelp("Si désactivé, l'utilisateur ne peut pas se connecter à la plateforme");
+            
+            yield DateTimeField::new('last_login')->hideOnForm();
 
             return;
         }
