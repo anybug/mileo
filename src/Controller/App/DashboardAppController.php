@@ -301,7 +301,7 @@ class DashboardAppController extends AbstractDashboardController
     {
         return Dashboard::new()
             //->setTitle('Mileo')
-            ->setTitle('<img src="../assets/img/logo.png" />')
+            ->setTitle('<img src="/assets/img/logo.png" />')
             ->setFaviconPath('assets/img/favicons/favicon.ico')
             ->disableDarkMode()
             ;
