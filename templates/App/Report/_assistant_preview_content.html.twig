@@ -1,0 +1,58 @@
+{# templates/admin/_assistant_preview_content.html.twig #}
+<div class="alert alert-info w-75 mt-3">
+    <strong>Prévisualisation des trajets à ajouter au Rapport de {{ report.getPeriod() }}</strong>
+</div>
+
+<table class="table table-bordered w-75">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Départ</th>
+            <th>Arrivée</th>
+            <th>Km</th>
+            <th>Aller-retour</th>
+            <th>Km total</th>
+            <th style="display: none">Véhicule</th>
+            <th>Montant</th>
+            <th>Commentaire</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for trip in previewTrips %}
+        <tr>
+            <td>{{ trip.date }}</td>
+            <td>{{ trip.depart }}</td>
+            <td>{{ trip.arrivee }}</td>
+            <td>{{ trip.km }}</td>
+            <td>{{ trip.is_return ? 'Oui' : 'Non' }}</td>
+            <td>{{ trip.km_total }}</td>
+            <td style="display: none">{{ trip.vehicule_id }}</td>
+            <td>{{ trip.amount }} €</td>
+            <td>{{ trip.commentaire }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="9">Aucun trajet à prévisualiser.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if previewTrips|length > 0 %}
+{# Formulaire de confirmation #}
+<form method="POST" action="{{ bulkCreateActionUrl }}">
+    {# Champ caché pour les données des trajets #}
+    <input type="hidden" name="trips" value="{{ previewTrips|json_encode|e('html_attr') }}">
+
+    {# Boutons de confirmation/annulation #}
+    <div class="mt-3">
+        <button type="submit" class="btn btn-success">
+            <i class="fa fa-check"></i> Confirmer la crétation des trajets
+        </button>
+        <a href="{{ backUrl }}" class="btn btn-danger">
+            <i class="fa fa-times"></i> Annuler
+        </a>
+    </div>
+</form>
+{% endif %}
+

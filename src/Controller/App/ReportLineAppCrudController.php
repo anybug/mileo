@@ -496,11 +496,11 @@ class ReportLineAppCrudController extends AbstractCrudController
             ->onlyOnForms()
             //->setColumns('col-sm-4 col-lg-3 col-xxl-2')
             ;
-            yield IntegerField::new('km_total','Distance (km)')
-            ->setFormTypeOptions(['attr' => ['readonly'=> true, 'class' => 'report_km_total bg-light']])
-            ->setColumns('col-sm-4 col-lg-3 col-xxl-2')
-            ->hideOnIndex()
-            ;
+        yield IntegerField::new('km_total','Distance (km)')
+        ->setFormTypeOptions(['attr' => ['readonly'=> true, 'class' => 'report_km_total bg-light']])
+        ->setColumns('col-sm-4 col-lg-3 col-xxl-2')
+        ->hideOnIndex()
+        ;
         yield IntegerField::new('km_total','Distance')
             ->onlyOnIndex()
             ->setNumberFormat('%s'.' km')

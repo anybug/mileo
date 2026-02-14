@@ -26,6 +26,11 @@ services:
             - '../src/Kernel.php'
             - '../src/Tests/'
 
+    App\Service\MistralApiService:
+        arguments:
+            $httpClient: '@http_client'
+            $apiKey: '%env(MISTRAL_API_KEY)%'
+
     # controllers are imported separately to make sure services can be injected
     # as action arguments even if you don't extend any base controller class
     App\Controller\:

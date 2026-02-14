@@ -1,0 +1,192 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %}
+
+{% block page_title %}
+  <div class="d-flex align-items-center gap-2">
+    <a href="{{ backUrl }}"
+       class="text-decoration-none"
+       style="color: var(--bs-primary);"
+       title="Retour au rapport">
+      <i class="fa fa-arrow-left"></i>
+    </a>
+
+    <span>
+      Assistant IA de génération de trajets pour le Rapport de {{ report.getPeriod() }}
+    </span>
+  </div>
+{% endblock %}
+
+{% block main %}
+
+<article class="content">
+    <section class="">
+        <p class="fs-6">
+          Cet assistant IA (version Beta) va vous permettre de dupliquer plusieurs trajets d'un coup pour compléter votre rapport d'IK mensuel.<br />
+          <small>Le prompt est libre mais nous vous conseillons de vous laisser guider par les exemples fournis pour un résultat optimal.</small><br />
+        </p>
+        <p class="fs-6">
+          Sélectionnez la tâche que doit accomplir l'IA -> Prévisualisez les trajets -> Validez ou Modifiez votre saisie.
+        </p>  
+    </section>
+
+    <section class="content-body">
+        <div class="card shadow-sm w-75" >
+            <div class="card-header">
+                <h4>Assistant IA (Beta)</h4>
+            </div>
+
+            <div class="card-body">
+                {# Début du formulaire #}
+                {{ form_start(form, {'attr': {'id': 'assistant-form'}}) }}
+
+                    {# Champ "Action" (toujours visible) #}
+                    <div class="form-group">
+                        {{ form_label(form.action) }}
+                        <div class="form-check form-check-inline">
+                            {{ form_widget(form.action) }}
+                        </div>
+                    </div>
+
+                    {# Conteneur pour les champs dynamiques #}
+                    <div id="dynamic-fields-container">
+                        {# Bloc pour "Dupliquer une semaine" #}
+                        <div id="duplicate-week-fields" class="action-fields" data-action="duplicate_week" style="display: none;">
+                            <div class="form-group">
+                                {{ form_label(form.source_week) }}
+                                {{ form_widget(form.source_week) }}
+                            </div>
+                            <div class="form-group">
+                                {{ form_label(form.target) }}
+                                {{ form_widget(form.target) }}
+                            </div>
+                        </div>
+
+                        {# Bloc pour "Copier un trajet spécifique" et "Répéter un trajet dans le mois" #}
+                        <div id="trip-based-fields" class="action-fields" style="display: none;">
+                            <div class="form-group">
+                                {{ form_label(form.trip_id) }}
+                                {{ form_widget(form.trip_id) }}
+                            </div>
+                            {# Champ "Dates cibles" uniquement pour "Copier un trajet spécifique" #}
+                            <div id="target-dates-field" class="form-group" style="display: none;">
+                                {{ form_label(form.target_dates) }}
+                                {{ form_widget(form.target_dates) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Champs cachés #}
+                    {{ form_widget(form.parameters) }}
+                    {{ form_widget(form.prompt_type) }}
+
+                    {# Bouton de soumission avec spinner #}
+                    <button type="submit" class="btn btn-primary mt-3" id="preview-button">
+                        <span id="button-text"><i class="fa fa-eye"></i> Prévisualiser</span>
+                        <span id="button-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span id="button-loading-text" class="d-none">Génération en cours...</span>
+                    </button>
+
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        {# templates/admin/assistant.html.twig #}
+        <div id="preview-zone" style="display: none;"></div>
+
+    </section>
+</article>
+
+<script>
+        // Gestion dynamique des champs en fonction de l'action sélectionnée
+        document.querySelectorAll('input[name="assistant_ai[action]"]').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                // Masquer tous les blocs d'action
+                document.querySelectorAll('.action-fields').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+
+                // Réinitialiser les champs
+                document.querySelector('select[name="assistant_ai[source_week]"]').selectedIndex = 0;
+                document.querySelector('select[name="assistant_ai[target]"]').selectedIndex = 0;
+                document.querySelector('select[name="assistant_ai[trip_id]"]').selectedIndex = 0;
+                document.querySelector('select[name="assistant_ai[target_dates][]"]').selectedIndex = 0;
+
+                // Afficher le bloc correspondant à l'action sélectionnée
+                const action = this.value;
+                if (action === 'duplicate_week') {
+                    document.getElementById('duplicate-week-fields').style.display = 'block';
+                } else if (action === 'copy_trip' || action === 'repeat_monthly') {
+                    document.getElementById('trip-based-fields').style.display = 'block';
+
+                    // Afficher/masquer le champ "Dates cibles" selon l'action
+                    if (action === 'copy_trip') {
+                        document.getElementById('target-dates-field').style.display = 'block';
+                    } else {
+                        document.getElementById('target-dates-field').style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        // Soumission AJAX du formulaire
+        document.getElementById('assistant-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            // Désactiver le bouton et afficher le spinner
+            const previewButton = document.getElementById('preview-button');
+            previewButton.disabled = true;
+            document.getElementById('button-text').classList.add('d-none');
+            document.getElementById('button-spinner').classList.remove('d-none');
+            document.getElementById('button-loading-text').classList.remove('d-none');
+
+            fetch("{{ actionUrl|raw }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('preview-zone').innerHTML =
+                    '<div class="alert alert-danger">Une erreur est survenue. Veuillez réessayer.</div>';
+                document.getElementById('preview-zone').style.display = 'block';
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('preview-zone').innerHTML = html;
+                document.getElementById('preview-zone').style.display = 'block';
+            })
+            .finally(() => {
+                // Réactiver le bouton et masquer le spinner
+                previewButton.disabled = false;
+                document.getElementById('button-text').classList.remove('d-none');
+                document.getElementById('button-spinner').classList.add('d-none');
+                document.getElementById('button-loading-text').classList.add('d-none');
+            });
+        });
+
+        {# Initialisation : masquer tous les champs au chargement #}
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.action-fields').forEach(function(el) {
+                el.style.display = 'none';
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .action-fields {
+            margin-left: 20px;
+            border-left: 3px solid #ddd;
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+        .form-check-label {
+            padding-left: 5px;
+        }
+    </style>
+{% endblock %}

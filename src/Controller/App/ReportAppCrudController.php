@@ -4,63 +4,69 @@ namespace App\Controller\App;
 
 use App\Entity\Report;
 use App\Entity\ReportLine;
+use App\Entity\Vehicule;
 use App\Entity\VehiculesReport;
+use App\Form\AssistantAIType;
 use App\Form\ReportDuplicateType;
 use App\Form\ReportLineType;
 use App\Form\ReportTotalScaleType;
+use App\Service\MistralApiService;
+use App\Service\XlsxExporter;
 use App\Utils\ReportPdf;
 use App\Validator\Constraints\NewReport;
-use App\Service\XlsxExporter;
-use Doctrine\ORM\QueryBuilder;
-use Doctrine\Persistence\ManagerRegistry;
+
 use Doctrine\ORM\EntityManagerInterface;
-
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
-
-use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
+use Doctrine\ORM\QueryBuilder;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+
+use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
+use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+
 
 class ReportAppCrudController extends AbstractCrudController
 {
     private $adminUrlGenerator;
     private $exporter;
     private $slugger;
-    private $formChangeScale = [];
+    private $mistral;
 
     public function __construct(
         \EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator $adminUrlGenerator,
         XlsxExporter $exporter,
-        SluggerInterface $slugger
+        SluggerInterface $slugger,
+        MistralApiService $mistral
     ) {
         $this->adminUrlGenerator = $adminUrlGenerator;
         $this->exporter = $exporter;
         $this->slugger = $slugger;
+        $this->mistral = $mistral;
     }
 
     public static function getEntityFqcn(): string
@@ -162,25 +168,162 @@ class ReportAppCrudController extends AbstractCrudController
             ->linkToCrudAction('exportXls')
             ->setIcon("fa fa-file-excel");
 
-        return $actions
+            
+        $assistantAI = Action::new('assistantAI', 'Assistant IA')
+            ->setIcon('fa-solid fa-wand-magic-sparkles')
+            ->linkToCrudAction('assistantAI')
+            ->setCssClass('btn btn-secondary')
+        ;    
 
+        $isManager = $this->isGranted('ROLE_MANAGER');
+
+        $actions
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_ADD_ANOTHER)
             ->add(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE)
             ->update(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE, fn(Action $a) =>
                 $a->setIcon("fa-solid fa-arrow-right")
-                  ->setLabel("Next")
-                  ->setCssClass('btn btn-primary suivant')
+                ->setLabel("Next")
+                ->setCssClass('btn btn-primary suivant')
             )
 
             ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $a) =>
                 $a->setCssClass('btn btn-primary new-report-action')
             )
-
-            ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_INDEX, $generatePdf)
-            ->add(Crud::PAGE_INDEX, $exportXls);
+            ->add(Crud::PAGE_INDEX, $exportXls)
+        ;
+
+        // Duplicate: uniquement pour les managers
+        if ($isManager) {
+            // Assistant IA: présent sur la page EDIT
+            $actions->add(Crud::PAGE_EDIT, $assistantAI);
+        }
+
+        return $actions;
+
     }
+
+    public function assistantAI(AdminContext $context): Response
+    {
+        $report = $context->getEntity()->getInstance();
+        $request = $context->getRequest();
+
+        if ($report->getUser() !== $this->getUser()) {
+            throw new AccessDeniedHttpException();
+        }
+
+        $form = $this->createForm(AssistantAIType::class, null, [
+            'report' => $report,
+        ]);
+
+        $form->handleRequest($request);
+
+        $backUrl = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::EDIT)
+                ->setEntityId($report->getId())
+                ->generateUrl()
+        ;
+
+        $actionUrl = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction('assistantAI')
+                ->setEntityId($report->getId())
+                ->generateUrl()
+            ;
+                
+        if ($form->isSubmitted() && $form->isValid()) {
+           
+            $actionType = $form->get('prompt_type')->getData(); // Récupéré depuis le formulaire
+            $parameters = json_decode($form->get('parameters')->getData(), true);
+
+            $previewTrips = $this->mistral->generateTrips($actionType, $report, $parameters);
+
+            if ($request->isXmlHttpRequest()) {
+                $bulkCreateActionUrl = $this->adminUrlGenerator
+                    ->setController(self::class)
+                    ->setAction('bulkCreateLines')
+                    ->setEntityId($report->getId())
+                    ->generateUrl()
+                ;
+
+                return new Response(
+                    $this->renderView('App/Report/_assistant_preview_content.html.twig', [
+                        'previewTrips' => $previewTrips,
+                        'report' => $report,
+                        'bulkCreateActionUrl' => $bulkCreateActionUrl,
+                        'backUrl' => $backUrl,
+                    ])
+                );
+            }
+
+            /*return $this->render('App/Report/assistant_preview.html.twig', [
+                'prompt' => $prompt,
+                'form' => $form->createView(),
+                'previewTrips' => $previewTrips,
+                'backUrl' => $backUrl
+            ]);*/
+        }
+
+        
+
+        return $this->render('App/Report/assistant.html.twig', [
+            'form' => $form->createView(),
+            'report' => $report,
+            'backUrl' => $backUrl,
+            'actionUrl' => $actionUrl
+
+        ]);
+    }
+
+    public function bulkCreateLines(AdminContext $context): RedirectResponse
+    {
+        $report = $context->getEntity()->getInstance();
+        $request = $context->getRequest();
+
+        $backUrl = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::EDIT)
+                ->setEntityId($report->getId())
+                ->generateUrl()
+        ;
+
+        $tripsData = json_decode($request->request->get('trips'), true);
+
+        if (empty($tripsData)) {
+            $this->addFlash('error', 'Aucun trajet à créer.');
+            return $this->redirect($backUrl);
+        }
+
+        $entityManager = $this->container->get('doctrine')->getManagerForClass(Report::class);
+        $vehicleRepository = $entityManager->getRepository(Vehicule::class);
+
+        foreach ($tripsData as $tripData) {
+            $trip = new ReportLine();
+            $trip->setTravelDate(new \DateTime($tripData['date']))
+                ->setStartAdress($tripData['depart'])
+                ->setEndAdress($tripData['arrivee'])
+                ->setKm($tripData['km'])
+                ->setKmTotal($tripData['km_total'])
+                ->setIsReturn($tripData['is_return'])
+                ->setVehicule($vehicleRepository->find($tripData['vehicule_id']))
+                ->setAmount($tripData['amount'])
+                ->setComment($tripData['commentaire'])
+                ->setReport($report)
+            ;
+
+            $entityManager->persist($trip);
+            //$report->addLine($trip);
+        }
+
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Les trajets ont été crées avec succès.');
+        
+        return $this->redirect($backUrl);
+    }
+
 
     public function edit(AdminContext $context)
     {
@@ -189,63 +332,6 @@ class ReportAppCrudController extends AbstractCrudController
         }
         return parent::edit($context);
     }
-
-    /*private function getNormalizedPeriod(AdminContext $context, string $filterName): ?array
-    {
-        $value = $context->getRequest()->query->all()['filters'][$filterName]['value'] ?? null;
-
-        if (!$value) {
-            return null;
-        }
-
-        // Format attendu : "Jan 2025 -> Dec 2025"
-        if (is_string($value) && str_contains($value, '->')) {
-
-            [$startRaw, $endRaw] = array_map('trim', explode('->', $value));
-
-            // startRaw = "Jan 2025"
-            // endRaw   = "Dec 2025"
-
-            [$startMonthName, $startYear] = explode(' ', $startRaw);
-            [$endMonthName,   $endYear]   = explode(' ', $endRaw);
-
-            // Conversion mois abrégés → numérique
-            $months = [
-                'Jan' => '01', 'Feb' => '02', 'Mar' => '03',
-                'Apr' => '04', 'May' => '05', 'Jun' => '06',
-                'Jul' => '07', 'Aug' => '08', 'Sep' => '09',
-                'Oct' => '10', 'Nov' => '11', 'Dec' => '12'
-            ];
-
-            return [
-                $months[$startMonthName] ?? null,  // mois début
-                $startYear,
-                $months[$endMonthName] ?? null,    // mois fin
-                $endYear
-            ];
-        }
-
-        // Format simple : "Jan 2025"
-        if (is_string($value) && str_contains($value, ' ')) {
-
-            [$monthName, $year] = explode(' ', $value);
-
-            $months = [
-                'Jan' => '01', 'Feb' => '02', 'Mar' => '03',
-                'Apr' => '04', 'May' => '05', 'Jun' => '06',
-                'Jul' => '07', 'Aug' => '08', 'Sep' => '09',
-                'Oct' => '10', 'Nov' => '11', 'Dec' => '12'
-            ];
-
-            return [
-                $months[$monthName] ?? null,
-                $year
-            ];
-        }
-
-        throw new \Exception("Format de période invalide pour le filtre '$filterName'. Valeur reçue : ".json_encode($value));
-    }
-    */
 
     public function generatePdf(AdminContext $context)
     {
