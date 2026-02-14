@@ -145,6 +145,7 @@ class TeamVehiculeCrudController extends AbstractCrudController
                 'choices' => [],
                 'help' => "Ce barème sera utilisé pour estimer les indemnités en temps réel, il vous sera demandé de le réajuster lors de l'édition du rapport annuel si besoin. Si vous changez le barème en cours d'année fiscale, vous pourrez l'appliquer aux rapports de toute l'année depuis le module Rapports.",
             ])
+            ->setRequired(true)
             ->onlyOnForms();
 
         yield TextField::new('scale', 'Barème : estimation de la distance annuelle parcourue')->hideOnForm();

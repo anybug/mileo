@@ -108,7 +108,9 @@ class VehiculeAppCrudController extends AbstractCrudController
                 'attr' => ['data-placeholder' => " ",'class' => 'bg-light vehicule_scale', 'disabled' => 'disabled'], 
                 'choices' => [], 
                 'help' => "Ce barème sera utilisé pour estimer les indemnités en temps réel, il vous sera demandé de le réajuster lors de l'édition du rapport annuel si besoin. Si vous changez le barème en cours d'année fiscale, vous pourrez l'appliquer aux rapports de toute l'année depuis le module Rapports."
-            ])->onlyOnForms();
+            ])
+            ->setRequired(true)
+            ->onlyOnForms();
         yield TextField::new('scale', 'Barème : estimation de la distance annuelle parcourue')->hideOnForm();    
         yield Field::new('hasLatestScale', 'Barème à jour')->onlyOnIndex()->setTemplatePath('App/Fields/boolean.html.twig');  
         

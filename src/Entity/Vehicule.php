@@ -40,6 +40,8 @@ class Vehicule
     #[ORM\Column(type: 'boolean', nullable: true)]
     private $is_default;
 
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Vous devez sélectionner un barème.')]
     #[ORM\ManyToOne(targetEntity: Scale::class, inversedBy: 'reportlines')]
     private $scale;
     
