@@ -175,7 +175,7 @@ class ReportAppCrudController extends AbstractCrudController
             ->setCssClass('btn btn-secondary')
         ;    
 
-        $isManager = $this->isGranted('ROLE_MANAGER');
+        $isManager = $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_PREVIOUS_ADMIN');
 
         $actions
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
