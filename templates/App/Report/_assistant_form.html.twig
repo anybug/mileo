@@ -1,0 +1,18 @@
+{% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %} 
+
+<div id="assistant-form-container">
+    {% if form.source_week is defined %}
+        {{ form_row(form.source_week) }}
+    {% endif %}
+    {% if form.trip_id is defined %}
+        {{ form_row(form.trip_id) }}
+    {% endif %}        
+
+    {% if form.destination is defined %}    
+        {{ form_row(form.destination) }}
+    {% endif %}   
+
+    {% if form.target_period is defined %}    
+        {{ form_row(form.target_period) }}
+    {% endif %}    
+</div>

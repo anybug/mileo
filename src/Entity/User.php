@@ -768,5 +768,80 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getAllFavoriteAddresses(): array
+    {
+        $all = [];
+
+        // Mes adresses
+        foreach ($this->getUserAddresses() as $ua) {
+            $all[] = $ua;
+        }
+
+        // Si compte géré (équipe) : adresses du manager aussi
+        if ($this->getManagedBy()) {
+            foreach ($this->getManagedBy()->getUserAddresses() as $ua) {
+                $all[] = $ua;
+            }
+        }
+
+        return $all;
+    }
+
+    public function resolveFavoriteAddressName(?string $address): ?string
+    {
+        if (!$address) {
+            return null;
+        }
+
+        $needle = self::normalizeAddressForCompare($address);
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach ($this->getAllFavoriteAddresses() as $fav) {
+            $favAddress = trim((string) $fav->getAddress());
+            if ($favAddress === '') {
+                continue;
+            }
+
+            $hay = self::normalizeAddressForCompare($favAddress);
+
+            // Match strict après normalisation
+            if ($hay === $needle) {
+                return $fav->getName();
+            }
+
+            // Match “souple” (utile quand Google ajoute/retire des détails)
+            // Exemple: "12 rue X, 75000 Paris" vs "12 rue X, Paris"
+            if (strlen($hay) >= 8 && (str_contains($needle, $hay) || str_contains($hay, $needle))) {
+                return $fav->getName();
+            }
+        }
+
+        return null;
+    }
+
+    private static function normalizeAddressForCompare(string $s): string
+    {
+        $s = trim(mb_strtolower($s));
+
+        // Retire les accents si possible (ext-intl souvent présente sur Symfony)
+        if (class_exists(\Transliterator::class)) {
+            $tr = \Transliterator::create('NFD; [:Nonspacing Mark:] Remove; NFC;');
+            if ($tr) {
+                $s = $tr->transliterate($s);
+            }
+        } else {
+            $s = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s) ?: $s;
+            $s = mb_strtolower($s);
+        }
+
+        // Harmonise ponctuation / espaces
+        $s = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $s);
+        $s = preg_replace('/\s+/u', ' ', $s);
+
+        return trim($s);
+    }
+
 }
 

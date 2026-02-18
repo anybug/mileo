@@ -128,9 +128,6 @@ class VehiculeAppCrudController extends AbstractCrudController
             ->hideOnForm()
             ;
         }
-
-        
-        
     }
 
     public function createEntity(string $entityFqcn)

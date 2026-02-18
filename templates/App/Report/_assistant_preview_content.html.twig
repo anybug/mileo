@@ -1,11 +1,30 @@
 {# templates/admin/_assistant_preview_content.html.twig #}
 <div class="alert alert-info w-75 mt-3">
-    <strong>Prévisualisation des trajets à ajouter au Rapport de {{ report.getPeriod() }}</strong>
+    <div>
+        <strong>Prévisualisation des trajets à ajouter au Rapport de {{ report.getPeriod() }}</strong>
+        <span class="badge rounded-pill bg-primary text-light">
+
+            {% if previewTrips|length > 0 %}
+                <i class="fa fa-plus me-1">{{ previewTrips|length }}</i> 
+                {% if previewTrips|length > 1 %}
+                    {{ "trajets"|trans }}
+                {% else %}
+                    {{ "trajet"|trans }}
+                {% endif %}
+
+            {% else %}
+                {{ "Aucun trajet possible"|trans }}
+            {% endif %}  
+
+        </span>    
+    </div>
+    
 </div>
 
 <table class="table table-bordered w-75">
     <thead>
         <tr>
+            <th style="display: none"></th>
             <th>Date</th>
             <th>Départ</th>
             <th>Arrivée</th>
@@ -20,15 +39,16 @@
     <tbody>
         {% for trip in previewTrips %}
         <tr>
-            <td>{{ trip.date }}</td>
-            <td>{{ trip.depart }}</td>
-            <td>{{ trip.arrivee }}</td>
+            <td style="display: none">{{ trip.date }}</td>
+            <td class="text-nowrap">{{ trip.date|date('l')|trans }} <br /> {{ trip.date|date('d/m/Y') }}</td>
+            <td>{{ trip.start }}</td>
+            <td>{{ trip.end }}</td>
             <td>{{ trip.km }}</td>
             <td>{{ trip.is_return ? 'Oui' : 'Non' }}</td>
             <td>{{ trip.km_total }}</td>
             <td style="display: none">{{ trip.vehicule_id }}</td>
             <td>{{ trip.amount }} €</td>
-            <td>{{ trip.commentaire }}</td>
+            <td>{{ trip.comment }}</td>
         </tr>
         {% else %}
         <tr>

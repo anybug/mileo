@@ -65,11 +65,11 @@ class OrderAppCrudController extends AbstractCrudController
             ->linkToCrudAction('generateInvoicePdf');
 
         return $actions
-        ->disable(Action::NEW)
-        ->disable(Action::EDIT)
-        ->disable(Action::DELETE)
+            ->disable(Action::NEW)
+            ->disable(Action::EDIT)
+            ->disable(Action::DELETE)
             ->add(Crud::PAGE_INDEX,$invoice);
-            ;
+            
     }
 
     public function configureFields(string $pageName): iterable

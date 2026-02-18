@@ -17,6 +17,8 @@ class MistralApiService
     {
         $prompt = $this->promptBuilder->buildPrompt($actionType, $report, $parameters);
 
+        //dd($prompt);
+
         $response = $this->httpClient->request('POST', 'https://api.mistral.ai/v1/chat/completions', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->apiKey,

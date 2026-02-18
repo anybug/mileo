@@ -12,6 +12,7 @@ use App\Form\ReportLineType;
 use App\Form\ReportTotalScaleType;
 use App\Service\MistralApiService;
 use App\Service\XlsxExporter;
+use App\Service\TripDuplicationService;
 use App\Utils\ReportPdf;
 use App\Validator\Constraints\NewReport;
 
@@ -21,15 +22,12 @@ use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
-
 use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
-
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
@@ -37,9 +35,10 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
-
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -56,17 +55,20 @@ class ReportAppCrudController extends AbstractCrudController
     private $exporter;
     private $slugger;
     private $mistral;
+    private $tripDuplicator;
 
     public function __construct(
-        \EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator $adminUrlGenerator,
+        AdminUrlGenerator $adminUrlGenerator,
         XlsxExporter $exporter,
         SluggerInterface $slugger,
-        MistralApiService $mistral
+        MistralApiService $mistral,
+        TripDuplicationService $tripDuplicator
     ) {
         $this->adminUrlGenerator = $adminUrlGenerator;
         $this->exporter = $exporter;
         $this->slugger = $slugger;
         $this->mistral = $mistral;
+        $this->tripDuplicator = $tripDuplicator;
     }
 
     public static function getEntityFqcn(): string
@@ -167,11 +169,10 @@ class ReportAppCrudController extends AbstractCrudController
         $exportXls = Action::new('exportXls', 'Excel')
             ->linkToCrudAction('exportXls')
             ->setIcon("fa fa-file-excel");
-
             
-        $assistantAI = Action::new('assistantAI', 'Assistant IA')
+        $assistantAI = Action::new('assistantAI', 'Assistant')
             ->setIcon('fa-solid fa-wand-magic-sparkles')
-            ->linkToCrudAction('assistantAI')
+            ->linkToCrudAction('assistant')
             ->setCssClass('btn btn-secondary')
         ;    
 
@@ -197,14 +198,19 @@ class ReportAppCrudController extends AbstractCrudController
         // Duplicate: uniquement pour les managers
         if ($isManager) {
             // Assistant IA: présent sur la page EDIT
-            $actions->add(Crud::PAGE_EDIT, $assistantAI);
+            $actions
+                ->add(Crud::PAGE_EDIT, $assistantAI)
+                ->add(Crud::PAGE_INDEX, $assistantAI)
+                ->add(Crud::PAGE_INDEX, $duplicateAction)
+            ;
+
         }
 
         return $actions;
 
     }
 
-    public function assistantAI(AdminContext $context): Response
+    /*public function assistantAI(AdminContext $context): Response
     {
         $report = $context->getEntity()->getInstance();
         $request = $context->getRequest();
@@ -235,10 +241,13 @@ class ReportAppCrudController extends AbstractCrudController
                 
         if ($form->isSubmitted() && $form->isValid()) {
            
-            $actionType = $form->get('prompt_type')->getData(); // Récupéré depuis le formulaire
-            $parameters = json_decode($form->get('parameters')->getData(), true);
+            $data = $form->getData();
+            $action = $request->request->get('assistant_ai')['action'];
+            $source = $request->request->get('assistant_ai')['source_week'] ?? $request->request->get('assistant_ai')['trip_id'];
+            $destination = $request->request->get('assistant_ai')['destination'];
 
-            $previewTrips = $this->mistral->generateTrips($actionType, $report, $parameters);
+            // Générer les trajets à prévisualiser (exemple simplifié)
+            $previewTrips = $this->generatePreviewTrips($report, $action, $source, $destination);
 
             if ($request->isXmlHttpRequest()) {
                 $bulkCreateActionUrl = $this->adminUrlGenerator
@@ -258,15 +267,10 @@ class ReportAppCrudController extends AbstractCrudController
                 );
             }
 
-            /*return $this->render('App/Report/assistant_preview.html.twig', [
-                'prompt' => $prompt,
-                'form' => $form->createView(),
-                'previewTrips' => $previewTrips,
-                'backUrl' => $backUrl
-            ]);*/
+            return new JsonResponse(['error' => 'Formulaire invalide'], 400);
+
         }
 
-        
 
         return $this->render('App/Report/assistant.html.twig', [
             'form' => $form->createView(),
@@ -275,6 +279,139 @@ class ReportAppCrudController extends AbstractCrudController
             'actionUrl' => $actionUrl
 
         ]);
+    }*/
+
+    public function assistant(AdminContext $context, Request $request): Response
+    {
+        $report = $context->getEntity()->getInstance();
+
+        if ($report->getUser() !== $this->getUser()) {
+            throw new AccessDeniedHttpException();
+        }
+
+        $form = $this->createForm(AssistantAIType::class, null, ['report' => $report]);
+
+        // Soumission classique du formulaire
+        $form->handleRequest($request);
+
+        $actionUrl = $this->adminUrlGenerator
+                ->setController(crudControllerFqcn: self::class)
+                ->setAction('assistant')
+                ->setEntityId($report->getId())
+                ->generateUrl()
+            ;
+        
+        $actionAjaxUrl = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction('assistantAjaxForm')
+                ->setEntityId($report->getId())
+                ->generateUrl()
+            ;
+
+        $backUrl = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::EDIT)
+                ->setEntityId($report->getId())
+                ->generateUrl()
+        ;    
+         
+        if ($form->isSubmitted() && $form->isValid()) {
+           
+            $action = $form->get('action')->getData();
+            
+            switch ($action) {
+                case 'duplicate_week':
+                    // Exemple : $sourceWeek et $destination sont disponibles
+                    $source = $form->get('source_week')->getData();
+                    $destination = $form->get('destination')->getData();
+                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, $source, $destination);
+
+                    break;
+                case 'duplicate_trip':
+                    $source = $form->get('trip_id')->getData();
+                    $destination = $form->get('destination')->getData();
+                    // Exemple : $tripId et $destination sont disponibles
+                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, $source, $destination);
+                    break;
+                /*case 'duplicate_report': TODO: pas encore au point
+                    $targetPeriod = $form->get('target_period')->getData();
+                    /*$newReport = $this->tripDuplicator->duplicateReport($report, $targetPeriod);
+                    
+
+                    $this->addFlash('success', 'Rapport dupliqué avec succès !');
+
+                    // Redirection vers EDIT du report dupliqué
+                    $url = $this->adminUrlGenerator
+                        ->setController(self::class)
+                        ->setAction(Action::EDIT)
+                        ->setEntityId($newReport->getId())
+                        ->generateUrl();
+
+                    return $this->redirect($url);
+                    break;     
+                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action,null, $targetPeriod);  
+                    */  
+           
+            }
+
+            if ($request->isXmlHttpRequest()) {
+                $bulkCreateActionUrl = $this->adminUrlGenerator
+                    ->setController(self::class)
+                    ->setAction('bulkCreateLines')
+                    ->setEntityId($report->getId())
+                    ->generateUrl()
+                ;
+
+                return new Response(
+                    $this->renderView('App/Report/_assistant_preview_content.html.twig', [
+                        'previewTrips' => $previewTrips,
+                        'report' => $report,
+                        'bulkCreateActionUrl' => $bulkCreateActionUrl,
+                        'backUrl' => $backUrl,
+                    ])
+                );
+            }
+
+            return new JsonResponse(['error' => 'Formulaire invalide'], 400);
+
+        }    
+
+        return $this->render('App/Report/assistant.html.twig', [
+            'form' => $form->createView(),
+            'report' => $report,
+            'actionUrl' => $actionUrl,
+            'backUrl' => $backUrl,
+            'actionAjaxUrl' => $actionAjaxUrl
+        ]);
+    }
+
+    public function assistantAjaxForm(AdminContext $context, Request $request): Response
+    {
+        $report = $context->getEntity()->getInstance();
+
+        if ($report->getUser() !== $this->getUser()) {
+            throw new AccessDeniedHttpException();
+        }
+
+        $form = $this->createForm(AssistantAIType::class, null, ['report' => $report]);
+
+        // Soumission classique du formulaire
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid() && $request->isXmlHttpRequest()) 
+        {
+            return new Response(
+                $this->renderView('App/Report/_assistant_form.html.twig', [
+                    'form' => $form->createView(),
+                ])
+            );
+
+        }
+
+        return $this->render('App/Report/_assistant_form.html.twig', [
+            'form' => $form->createView()
+        ]);
+
     }
 
     public function bulkCreateLines(AdminContext $context): RedirectResponse
@@ -302,14 +439,14 @@ class ReportAppCrudController extends AbstractCrudController
         foreach ($tripsData as $tripData) {
             $trip = new ReportLine();
             $trip->setTravelDate(new \DateTime($tripData['date']))
-                ->setStartAdress($tripData['depart'])
-                ->setEndAdress($tripData['arrivee'])
+                ->setStartAdress($tripData['start'])
+                ->setEndAdress($tripData['end'])
                 ->setKm($tripData['km'])
                 ->setKmTotal($tripData['km_total'])
                 ->setIsReturn($tripData['is_return'])
                 ->setVehicule($vehicleRepository->find($tripData['vehicule_id']))
                 ->setAmount($tripData['amount'])
-                ->setComment($tripData['commentaire'])
+                ->setComment($tripData['comment'])
                 ->setReport($report)
             ;
 
@@ -529,7 +666,7 @@ class ReportAppCrudController extends AbstractCrudController
         \EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator $adminUrlGenerator,
         ValidatorInterface $validator
     ): Response {
-        /** @var Report $original */
+        // @var Report $original
         $original = $context->getEntity()->getInstance();
         $defaultData = [
             'year' => $original->getStartDate()->format('Y')
@@ -551,7 +688,7 @@ class ReportAppCrudController extends AbstractCrudController
             $new->setEndDate($end);
             $new->setUser($original->getUser());
 
-            /* Validation */
+            // Validation
             $errors = $validator->validate($new, new NewReport());
             if (count($errors) > 0) {
                 return $this->render('App/Report/duplicate_form.html.twig', [
@@ -564,7 +701,7 @@ class ReportAppCrudController extends AbstractCrudController
             $em->persist($new);
             $em->flush();
 
-            /* Clone des lignes */
+            // Clone des lignes
             foreach ($original->getLines() as $line) {
 
                 $newLine = new ReportLine();
@@ -579,7 +716,7 @@ class ReportAppCrudController extends AbstractCrudController
                 $newLine->setVehicule($line->getVehicule());
                 $newLine->setScale($line->getScale());
 
-                /* Ajustement de la date */
+                // Ajustement de la date
                 $adjusted = $line->getTravelDate()
                     ->setDate(
                         $year,
@@ -594,7 +731,7 @@ class ReportAppCrudController extends AbstractCrudController
                 $em->flush();
             }
 
-            /* Redirection vers EDIT du report dupliqué */
+            // Redirection vers EDIT du report dupliqué
             $url = $adminUrlGenerator
                 ->setController(self::class)
                 ->setAction(Action::EDIT)

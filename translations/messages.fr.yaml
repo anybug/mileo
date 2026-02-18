@@ -13,6 +13,7 @@ ReportLine: Trajet
 Monthly reports: Rapports
 Annual reports: Rapports annuels
 Reports: Rapports
+Nb reports: Nombre de rapports
 Reports list: Liste des rapports
 My reports: Mes rapports
 Travels: trajets
@@ -84,6 +85,23 @@ September : Septembre
 October : Octobre
 November : Novembre
 December : Décembre
+
+Monday: Lundi
+Tuesday: Mardi
+Wednesday: Mercredi
+Thursday: Jeudi
+Friday: Vendredi
+Saturday: Samedi
+Sunday: Dimanche
+Abréviations :
+
+Mon: Lun
+Tue: Mar
+Wed: Mer
+Thu: Jeu
+Fri: Ven
+Sat: Sam
+Sun: Dim
 
 Next: Suivant
 Previous: Précédent

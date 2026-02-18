@@ -167,8 +167,8 @@ $(document).ready(function () {
 
     });
 
-    // copy report line 
-    $(document).on('click', '.copy_link', function (e) {
+    // copy report line -> replaced by vanilla
+    /*$(document).on('click', '.copy_link', function (e) {
         e.preventDefault();
         var inputs = $(this).parent().parent().find('input, textarea, select');
         var values = new Array;
@@ -182,7 +182,7 @@ $(document).ready(function () {
 
         });
         CopyLine(values, checked);
-    });
+    });*/
 
     // footer in Report index
 
@@ -494,7 +494,7 @@ function favoriteModal(btn, urlAjax, classToChange, line) {
     });
 }
 
-function CopyLine(values, checked) {
+/*function CopyLine(values, checked) {
     $('form').find('.field-collection-add-button').click()
     initAutocomplete();
     dateTypeRange();
@@ -515,4 +515,4 @@ function CopyLine(values, checked) {
 
     totalForReport();
     focus(line);
-}
+}*/

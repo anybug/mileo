@@ -340,7 +340,7 @@ class ReportLineAppCrudController extends AbstractCrudController
 
         yield FormField::addPanel();
         yield DateField::new('travel_date','Date')->setColumns('col-sm-6 col-lg-5 col-xxl-2')->setHtmlAttributes($dateFieldHtmlAttributes)->onlyOnForms();
-        yield DateField::new('travel_date','Date')->onlyOnIndex();
+        yield DateField::new('travel_date','Date')->setFormat('full')->onlyOnIndex();
         yield AssociationField::new('vehicule', 'Véhicule')
             ->setFormTypeOptions([
                 'query_builder' => function (EntityRepository $er) {
@@ -470,23 +470,40 @@ class ReportLineAppCrudController extends AbstractCrudController
         */
 
 
+        // --- Départ (FORM) ---
         yield TextField::new('startAdress','Départ')
-                ->setFormTypeOptions([
-                    'attr' => ['class'=>'autocomplete lines_start'],
-                    'label_html' => true,
-                    'help' => 'Saisissez une adresse ou <a class="popup-fav-start">selectionnez une de vos <i class="fa fa-map-marker-alt"></i></a>'
-                ])
-                ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
-            ;
+            ->setFormTypeOptions([
+                'attr' => ['class'=>'autocomplete lines_start'],
+                'label_html' => true,
+                'help' => 'Saisissez une adresse ou <a class="popup-fav-start">selectionnez une de vos <i class="fa fa-map-marker-alt"></i></a>'
+            ])
+            ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
+            ->onlyOnForms();
+
+        // --- Départ (INDEX) ---
+        yield TextField::new('startAdress', 'Départ')
+            ->onlyOnIndex()
+            ->renderAsHtml()
+            ->formatValue(fn ($value, $entity) => $this->formatAddressWithCoproForIndex($value));
+       
+
+        // --- Arrivée (FORM) ---
         yield TextField::new('endAdress',"Arrivée")
-                ->setFormTypeOptions([
-                    'attr' => ['class'=>'autocomplete lines_end'],
-                    'label_html' => true,
-                    'help' => 'Saisissez une adresse ou <a class="popup-fav-end">selectionnez une de vos <i class="fa fa-map-marker-alt"></i></a>'
-                ])
-                ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
-            ;
-            
+            ->setFormTypeOptions([
+                'attr' => ['class'=>'autocomplete lines_end'],
+                'label_html' => true,
+                'help' => 'Saisissez une adresse ou <a class="popup-fav-end">selectionnez une de vos <i class="fa fa-map-marker-alt"></i></a>'
+            ])
+            ->setColumns('col-sm-12 col-lg-6 col-xxl-5')
+            ->onlyOnForms();
+
+        // --- Arrivée (INDEX) ---
+        yield TextField::new('endAdress', 'Arrivée')
+            ->onlyOnIndex()
+            ->renderAsHtml()
+            ->formatValue(fn ($value, $entity) => $this->formatAddressWithCoproForIndex($value));
+
+
         yield TextareaField::new('comment','Motif du déplacement')
             ->onlyOnIndex()
         ;
@@ -584,8 +601,6 @@ class ReportLineAppCrudController extends AbstractCrudController
         throw new \Exception("Format de période invalide pour le filtre '$filterName'.");
     }
 
-
-
     public function generateAmountAction(AdminContext $context): JsonResponse
     {
         $report_id = $context->getRequest()->query->get('report_id') ?? false;
@@ -650,7 +665,6 @@ class ReportLineAppCrudController extends AbstractCrudController
         ]);
     }
 
-
     public function generateFooterLine(KeyValueStore $responseParameters, AdminContext $context) 
     {
         $paginator = $responseParameters->get('paginator');
@@ -689,5 +703,32 @@ class ReportLineAppCrudController extends AbstractCrudController
 
         return $responseParameters;
     }
+    
+   private function formatAddressWithCoproForIndex(?string $address): string
+    {
+        $address = (string) $address;
+
+        $me = $this->getUser();
+        $name = null;
+
+        if ($me instanceof \App\Entity\User) {
+            $name = $me->resolveFavoriteAddressName($address);
+        }
+
+        $addrEsc = htmlspecialchars($address, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        if ($name) {
+            $nameEsc = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+            return sprintf(
+                '<div class="d-flex flex-column lh-sm"><span class="fw-semibold">%s</span><small class="text-muted">%s</small></div>',
+                $nameEsc,
+                $addrEsc
+            );
+        }
+
+        return sprintf('<span>%s</span>', $addrEsc);
+    }
+
 
 }

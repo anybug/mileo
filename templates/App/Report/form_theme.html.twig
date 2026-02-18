@@ -51,3 +51,136 @@
         {% endif %}
     </div>
 {% endblock collection_entry_row %}
+{% block collection_widget %}
+    {{ parent() }}
+
+    <style>
+        .ea-dup-highlight {
+            animation: eaDupFlash 1.2s ease-in-out;
+        }
+        @keyframes eaDupFlash {
+            0%   { outline: 0 solid transparent; box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+            20%  { outline: 3px solid var(--bs-primary); box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb), .25); }
+            100% { outline: 0 solid transparent; box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+        }
+    </style>
+
+    <script>
+        (function () {
+            if (window.__eaCollectionDuplicateInstalled) return;
+            window.__eaCollectionDuplicateInstalled = true;
+
+            function getIndexFromName(name) {
+                // ex: report[lines][3][departure] => 3
+                const m = name && name.match(/\[(\d+)\](?=\[[^\]]+\]$)/);
+                return m ? m[1] : null;
+            }
+
+            function replaceIndex(name, fromIndex, toIndex) {
+                // remplace le dernier [index] avant le dernier [field]
+                const re = new RegExp("\\[" + fromIndex + "\\](?=\\[[^\\]]+\\]$)");
+                return name.replace(re, "[" + toIndex + "]");
+            }
+
+            function copyValues(sourceItem, targetItem) {
+                const sourceFields = sourceItem.querySelectorAll('input, select, textarea');
+
+                // On essaie de déduire l’index source + target via le name du 1er champ
+                const sourceFirst = sourceItem.querySelector('[name]');
+                const targetFirst = targetItem.querySelector('[name]');
+                const sourceIndex = sourceFirst ? getIndexFromName(sourceFirst.name) : null;
+                const targetIndex = targetFirst ? getIndexFromName(targetFirst.name) : null;
+
+                sourceFields.forEach((src) => {
+                    if (!src.name) return;
+
+                    let targetName = src.name;
+                    if (sourceIndex !== null && targetIndex !== null) {
+                        targetName = replaceIndex(src.name, sourceIndex, targetIndex);
+                    }
+
+                    const dst = targetItem.querySelector(`[name="${CSS.escape(targetName)}"]`);
+                    if (!dst) return;
+
+                    if (src.type === 'checkbox' || src.type === 'radio') {
+                        dst.checked = src.checked;
+                        dst.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
+
+                    if (src.tagName === 'SELECT') {
+                        dst.value = src.value;
+                        dst.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
+
+                    dst.value = src.value;
+                    dst.dispatchEvent(new Event('input', { bubbles: true }));
+                    dst.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            }
+
+            function openAccordionIfAny(item) {
+                const btn = item.querySelector('.accordion-button');
+                const collapse = item.querySelector('.accordion-collapse');
+                if (!btn || !collapse) return;
+
+                // Si c’est fermé, on clique pour l’ouvrir
+                if (btn.classList.contains('collapsed')) {
+                    btn.click();
+                }
+            }
+
+            function scrollToItem(item) {
+                item.classList.remove('ea-dup-highlight');
+                // reflow pour relancer l’anim
+                void item.offsetWidth;
+                item.classList.add('ea-dup-highlight');
+
+                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            document.addEventListener('click', function (e) {
+                const copyBtn = e.target.closest('.field-collection-copy-button');
+                if (!copyBtn) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation(); // empêche un 2e handler d’agir
+
+                // lock anti-double (si 2 handlers existent quand même)
+                if (copyBtn.dataset.dupBusy === '1') return;
+                copyBtn.dataset.dupBusy = '1';
+
+                const sourceItem = copyBtn.closest('.field-collection-item');
+                const collection = sourceItem?.closest('.field-collection, [data-ea-collection-field]');
+                const addBtn = collection?.querySelector('.field-collection-add-button');
+                if (!sourceItem || !collection || !addBtn) {
+                    copyBtn.dataset.dupBusy = '0';
+                    return;
+                }
+
+                const itemsBefore = collection.querySelectorAll('.field-collection-item').length;
+
+                const observer = new MutationObserver(() => {
+                    const itemsAfter = collection.querySelectorAll('.field-collection-item');
+                    if (itemsAfter.length <= itemsBefore) return;
+
+                    observer.disconnect();
+
+                    const targetItem = itemsAfter[itemsAfter.length - 1];
+
+                    copyValues(sourceItem, targetItem);
+                    openAccordionIfAny(targetItem);
+                    scrollToItem(targetItem);
+
+                    copyBtn.dataset.dupBusy = '0';
+                });
+
+                observer.observe(collection, { childList: true, subtree: true });
+                addBtn.click();
+                }, true); // écoute en CAPTURE (encore plus efficace contre doubles listeners)
+
+        })();
+    </script>
+{% endblock %}

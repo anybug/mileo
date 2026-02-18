@@ -57,6 +57,7 @@ class Report
     private $lines;
 
     private $year;
+    private $month;
 
     /**
      * @var \Doctrine\Common\Collections\Collection
@@ -386,8 +387,6 @@ class Report
         $this->id = null;
     }
 
-
-    
     public function synchronizeLines(): void
     {
         $targetYear = (int) $this->start_date->format('Y');
@@ -430,4 +429,47 @@ class Report
             }
         }
     }
+
+    public function getReportLinesForWeek(int $weekNumber): array
+    {
+        $out = [];
+        foreach ($this->getLines() as $line) {
+            if ((int) $line->getTravelDate()->format('W') === $weekNumber) {
+                $out[] = $line;
+            }
+        }
+        return $out;
+    }
+
+    public function getReportLineById(int $lineId): ?ReportLine
+    {
+        foreach ($this->getLines() as $line) {
+            if ((int) $line->getId() === $lineId) {
+                return $line;
+            }
+        }
+
+        return null;
+    }
+
+    /*public function getYear()
+    {
+        return $this->getStartDate()->format('YYYY');
+    }*/
+
+    /*public function getMonth()
+    {
+        return $this->getStartDate()->format('m');
+    }*/
+
+    public function getMonth(): ?\DateTimeInterface
+    {
+        return $this->month;
+    }
+
+    public function setMonth(?\DateTimeInterface $month)
+    {
+        $this->month = $month;
+    }
+    
 }
