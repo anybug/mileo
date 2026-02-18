@@ -452,16 +452,6 @@ class Report
         return null;
     }
 
-    /*public function getYear()
-    {
-        return $this->getStartDate()->format('YYYY');
-    }*/
-
-    /*public function getMonth()
-    {
-        return $this->getStartDate()->format('m');
-    }*/
-
     public function getMonth(): ?\DateTimeInterface
     {
         return $this->month;

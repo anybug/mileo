@@ -91,13 +91,16 @@ class TripDuplicationService
     {
         $targetWeeks = [];
         $sourceYear = (int)$sourceWeekDate->format('Y');
+        $sourceMonth = (int)$sourceWeekDate->format('m');
 
         if ($destination === 'next_week') {
             $targetWeeks[] = (int)$sourceWeekDate->format('W') + 1;
         } elseif ($destination === 'full_month') {
+            // Récupérer toutes les semaines du mois, en vérifiant qu'elles sont bien dans le mois
             $startOfMonth = (clone $sourceWeekDate)->modify('first day of this month');
             $endOfMonth = (clone $sourceWeekDate)->modify('last day of this month');
 
+            // Parcourir chaque jour du mois et récupérer les numéros de semaine uniques
             $currentDate = clone $startOfMonth;
             while ($currentDate <= $endOfMonth) {
                 $weekNumber = (int)$currentDate->format('W');
@@ -108,14 +111,7 @@ class TripDuplicationService
             }
         }
 
-        // Filtrer les semaines invalides (ex. : semaine 53 si elle n'existe pas)
-        $targetWeeks = array_filter($targetWeeks, function ($week) use ($sourceYear) {
-            $testDate = new DateTime();
-            $testDate->setISODate($sourceYear, $week);
-            return $testDate->format('Y') === $sourceYear;
-        });
-
-        return array_values($targetWeeks);
+        return $targetWeeks;
     }
 
 

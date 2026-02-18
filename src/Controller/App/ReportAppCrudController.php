@@ -210,77 +210,6 @@ class ReportAppCrudController extends AbstractCrudController
 
     }
 
-    /*public function assistantAI(AdminContext $context): Response
-    {
-        $report = $context->getEntity()->getInstance();
-        $request = $context->getRequest();
-
-        if ($report->getUser() !== $this->getUser()) {
-            throw new AccessDeniedHttpException();
-        }
-
-        $form = $this->createForm(AssistantAIType::class, null, [
-            'report' => $report,
-        ]);
-
-        $form->handleRequest($request);
-
-        $backUrl = $this->adminUrlGenerator
-                ->setController(self::class)
-                ->setAction(Action::EDIT)
-                ->setEntityId($report->getId())
-                ->generateUrl()
-        ;
-
-        $actionUrl = $this->adminUrlGenerator
-                ->setController(self::class)
-                ->setAction('assistantAI')
-                ->setEntityId($report->getId())
-                ->generateUrl()
-            ;
-                
-        if ($form->isSubmitted() && $form->isValid()) {
-           
-            $data = $form->getData();
-            $action = $request->request->get('assistant_ai')['action'];
-            $source = $request->request->get('assistant_ai')['source_week'] ?? $request->request->get('assistant_ai')['trip_id'];
-            $destination = $request->request->get('assistant_ai')['destination'];
-
-            // Générer les trajets à prévisualiser (exemple simplifié)
-            $previewTrips = $this->generatePreviewTrips($report, $action, $source, $destination);
-
-            if ($request->isXmlHttpRequest()) {
-                $bulkCreateActionUrl = $this->adminUrlGenerator
-                    ->setController(self::class)
-                    ->setAction('bulkCreateLines')
-                    ->setEntityId($report->getId())
-                    ->generateUrl()
-                ;
-
-                return new Response(
-                    $this->renderView('App/Report/_assistant_preview_content.html.twig', [
-                        'previewTrips' => $previewTrips,
-                        'report' => $report,
-                        'bulkCreateActionUrl' => $bulkCreateActionUrl,
-                        'backUrl' => $backUrl,
-                    ])
-                );
-            }
-
-            return new JsonResponse(['error' => 'Formulaire invalide'], 400);
-
-        }
-
-
-        return $this->render('App/Report/assistant.html.twig', [
-            'form' => $form->createView(),
-            'report' => $report,
-            'backUrl' => $backUrl,
-            'actionUrl' => $actionUrl
-
-        ]);
-    }*/
-
     public function assistant(AdminContext $context, Request $request): Response
     {
         $report = $context->getEntity()->getInstance();
@@ -351,7 +280,6 @@ class ReportAppCrudController extends AbstractCrudController
                     break;     
                     $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action,null, $targetPeriod);  
                     */  
-           
             }
 
             if ($request->isXmlHttpRequest()) {
