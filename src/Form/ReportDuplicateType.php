@@ -13,7 +13,7 @@ class ReportDuplicateType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $currentYear = (int) date('Y');
-        $years = range($currentYear - 2, $currentYear + 1);
+        $years = range($currentYear - 3, $currentYear + 1);
 
         $months = [
             'Janvier' => 1, 'Février' => 2, 'Mars' => 3,
