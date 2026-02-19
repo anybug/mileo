@@ -351,6 +351,7 @@ class ReportLineAppCrudController extends AbstractCrudController
                 'attr' => ['class'=>'report_vehicule']
             ])
             ->setColumns('col-sm-6 col-lg-5 col-xxl-2')
+            ->setTemplateName('crud/field/generic')
             ;
         yield FormField::addRow();
         yield FormField::addPanel('Travel information')->setIcon('fa fa-car');
@@ -484,7 +485,7 @@ class ReportLineAppCrudController extends AbstractCrudController
         yield TextField::new('startAdress', 'Départ')
             ->onlyOnIndex()
             ->renderAsHtml()
-            ->formatValue(fn ($value, $entity) => $this->formatAddressWithCoproForIndex($value));
+            ->formatValue(fn ($value, $entity) => $entity->formatAddressWithName($value));
        
 
         // --- Arrivée (FORM) ---
@@ -501,7 +502,7 @@ class ReportLineAppCrudController extends AbstractCrudController
         yield TextField::new('endAdress', 'Arrivée')
             ->onlyOnIndex()
             ->renderAsHtml()
-            ->formatValue(fn ($value, $entity) => $this->formatAddressWithCoproForIndex($value));
+            ->formatValue(fn ($value, $entity) => $entity->formatAddressWithName($value));
 
 
         yield TextareaField::new('comment','Motif du déplacement')
@@ -704,31 +705,4 @@ class ReportLineAppCrudController extends AbstractCrudController
         return $responseParameters;
     }
     
-   private function formatAddressWithCoproForIndex(?string $address): string
-    {
-        $address = (string) $address;
-
-        $me = $this->getUser();
-        $name = null;
-
-        if ($me instanceof \App\Entity\User) {
-            $name = $me->resolveFavoriteAddressName($address);
-        }
-
-        $addrEsc = htmlspecialchars($address, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        if ($name) {
-            $nameEsc = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-            return sprintf(
-                '<div class="d-flex flex-column lh-sm"><span class="fw-semibold">%s</span><small class="text-muted">%s</small></div>',
-                $nameEsc,
-                $addrEsc
-            );
-        }
-
-        return sprintf('<span>%s</span>', $addrEsc);
-    }
-
-
 }

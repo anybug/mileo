@@ -39,6 +39,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -56,19 +57,22 @@ class ReportAppCrudController extends AbstractCrudController
     private $slugger;
     private $mistral;
     private $tripDuplicator;
+    private $logger;
 
     public function __construct(
         AdminUrlGenerator $adminUrlGenerator,
         XlsxExporter $exporter,
         SluggerInterface $slugger,
         MistralApiService $mistral,
-        TripDuplicationService $tripDuplicator
+        TripDuplicationService $tripDuplicator,
+        LoggerInterface $logger,
     ) {
         $this->adminUrlGenerator = $adminUrlGenerator;
         $this->exporter = $exporter;
         $this->slugger = $slugger;
         $this->mistral = $mistral;
         $this->tripDuplicator = $tripDuplicator;
+        $this->logger = $logger;
     }
 
     public static function getEntityFqcn(): string
@@ -161,23 +165,31 @@ class ReportAppCrudController extends AbstractCrudController
             ->setLabel("PDF")
             ->linkToCrudAction('generatePdf');
 
-        $duplicateAction = Action::new('duplicate', 'Duplicate')
-            ->linkToCrudAction('duplicateReport')
-            ->setIcon("fa fa-copy")
-            ->setCssClass("duplicate-report-action");
-
         $exportXls = Action::new('exportXls', 'Excel')
             ->linkToCrudAction('exportXls')
             ->setIcon("fa fa-file-excel");
             
-        $assistantAI = Action::new('assistantAI', 'Assistant')
+        $assistantAI = Action::new('assistant', 'Assistant')
             ->setIcon('fa-solid fa-wand-magic-sparkles')
             ->linkToCrudAction('assistant')
             ->setCssClass('btn btn-secondary')
         ;    
 
-        $isManager = $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_PREVIOUS_ADMIN');
+        // Assistant visible si abonnement ≠ FREE -> tout le monde pour l'instant
+        /*$subscription = $this->getUser()->getSubscription();
+        $planName = $subscription && $subscription->getPlan()
+            ? strtoupper((string) $subscription->getPlan()->getName())
+            : 'FREE';
 
+        $canSeeAssistant = ($planName !== 'FREE') | $this->isGranted('ROLE_PREVIOUS_ADMIN');
+
+        if ($canSeeAssistant) {
+            $actions
+                ->add(Crud::PAGE_INDEX, $assistantAI)
+                ->add(Crud::PAGE_EDIT, $assistantAI)
+            ;
+        }*/
+        
         $actions
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_ADD_ANOTHER)
@@ -193,18 +205,13 @@ class ReportAppCrudController extends AbstractCrudController
             )
             ->add(Crud::PAGE_INDEX, $generatePdf)
             ->add(Crud::PAGE_INDEX, $exportXls)
+			->add(Crud::PAGE_INDEX, $assistantAI)
+            ->add(Crud::PAGE_EDIT, $assistantAI)
+            ->reorder(Crud::PAGE_INDEX, ['assistant', Action::EDIT, 'generatePdf', 'exportXls', Action::DELETE,])
+
         ;
 
-        // Duplicate: uniquement pour les managers
-        if ($isManager) {
-            // Assistant IA: présent sur la page EDIT
-            $actions
-                ->add(Crud::PAGE_EDIT, $assistantAI)
-                ->add(Crud::PAGE_INDEX, $assistantAI)
-                ->add(Crud::PAGE_INDEX, $duplicateAction)
-            ;
-
-        }
+        
 
         return $actions;
 
@@ -262,41 +269,49 @@ class ReportAppCrudController extends AbstractCrudController
                     // Exemple : $tripId et $destination sont disponibles
                     $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, $source, $destination);
                     break;
-                /*case 'duplicate_report': TODO: pas encore au point
+                case 'duplicate_report':
                     $targetPeriod = $form->get('target_period')->getData();
-                    /*$newReport = $this->tripDuplicator->duplicateReport($report, $targetPeriod);
-                    
-
-                    $this->addFlash('success', 'Rapport dupliqué avec succès !');
-
-                    // Redirection vers EDIT du report dupliqué
-                    $url = $this->adminUrlGenerator
-                        ->setController(self::class)
-                        ->setAction(Action::EDIT)
-                        ->setEntityId($newReport->getId())
-                        ->generateUrl();
-
-                    return $this->redirect($url);
+                    $copyMode = $form->get('copy_mode')->getData();
+                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, '', $targetPeriod, $copyMode);  
                     break;     
-                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action,null, $targetPeriod);  
-                    */  
+                    
             }
-
+			
+			
             if ($request->isXmlHttpRequest()) {
-                $bulkCreateActionUrl = $this->adminUrlGenerator
+					
+				$confirmActionUrl = $this->adminUrlGenerator
                     ->setController(self::class)
                     ->setAction('bulkCreateLines')
                     ->setEntityId($report->getId())
                     ->generateUrl()
-                ;
+                ;	
+                
+				$tplVariables = [
+                    'previewTrips' => $previewTrips,
+                    'report' => $report,
+                    'confirmActionUrl' => $confirmActionUrl,
+                    'backUrl' => $backUrl,
+                ];
+				
+				if ($action === 'duplicate_report') {
+					$targetPeriod = $form->get('target_period')->getData();
+					$copyMode = $form->get('copy_mode')->getData();
+
+					$tplVariables['confirmActionUrl'] = $this->adminUrlGenerator
+						->setController(self::class)
+						->setAction('reportDuplication')
+						->setEntityId($report->getId())
+						->generateUrl();
+
+                    $tplVariables['action'] = $action;
+                    $tplVariables['copyMode'] = $copyMode;
+                    $tplVariables['targetPeriod'] = $targetPeriod;
+				}
+				
 
                 return new Response(
-                    $this->renderView('App/Report/_assistant_preview_content.html.twig', [
-                        'previewTrips' => $previewTrips,
-                        'report' => $report,
-                        'bulkCreateActionUrl' => $bulkCreateActionUrl,
-                        'backUrl' => $backUrl,
-                    ])
+                    $this->renderView('App/Report/_assistant_preview_content.html.twig', $tplVariables)
                 );
             }
 
@@ -333,7 +348,6 @@ class ReportAppCrudController extends AbstractCrudController
                     'form' => $form->createView(),
                 ])
             );
-
         }
 
         return $this->render('App/Report/_assistant_form.html.twig', [
@@ -388,6 +402,44 @@ class ReportAppCrudController extends AbstractCrudController
         
         return $this->redirect($backUrl);
     }
+
+    public function reportDuplication(AdminContext $context): RedirectResponse
+    {
+        /** @var Report $report */
+        $report = $context->getEntity()->getInstance();
+        $request = $context->getRequest();
+
+        if ($report->getUser() !== $this->getUser()) {
+            throw new AccessDeniedHttpException();
+        }
+
+        // récup depuis POST (recommandé) ou GET
+        $targetPeriod = $request->request->get('target_period') ?? $request->query->get('target_period');
+        $copyMode = $request->request->get('copy_mode');
+
+        if (!$targetPeriod) {
+            $this->addFlash('error', 'Période cible manquante.');
+            $url = $this->adminUrlGenerator
+                ->setController(self::class)
+                ->setAction(Action::EDIT)
+                ->setEntityId($report->getId())
+                ->generateUrl();
+            return $this->redirect($url);
+        }
+
+        $newReport = $this->tripDuplicator->duplicateReport($report, $targetPeriod, $copyMode);
+
+        $this->addFlash('success', 'Rapport dupliqué avec succès !');
+
+        $url = $this->adminUrlGenerator
+            ->setController(self::class)
+            ->setAction(Action::EDIT)
+            ->setEntityId($newReport->getId())
+            ->generateUrl();
+
+        return $this->redirect($url);
+    }
+
 
 
     public function edit(AdminContext $context)
@@ -584,95 +636,6 @@ class ReportAppCrudController extends AbstractCrudController
         $params->set('vehiculesTotals', $vehiculesTotals);
 
         return $params;
-    }
-
-    public function duplicateReport(
-        AdminContext $context,
-        Request $request,
-        EntityManagerInterface $em,
-        FormFactoryInterface $formFactory,
-        \EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator $adminUrlGenerator,
-        ValidatorInterface $validator
-    ): Response {
-        // @var Report $original
-        $original = $context->getEntity()->getInstance();
-        $defaultData = [
-            'year' => $original->getStartDate()->format('Y')
-        ];
-
-        $form = $formFactory->create(ReportDuplicateType::class, $defaultData);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-            $year = $data['year'];
-            $month = $data['month'];
-
-            $start = new \DateTimeImmutable("$year-$month-01");
-            $end = $start->modify('last day of this month');
-
-            $new = new Report();
-            $new->setStartDate($start);
-            $new->setEndDate($end);
-            $new->setUser($original->getUser());
-
-            // Validation
-            $errors = $validator->validate($new, new NewReport());
-            if (count($errors) > 0) {
-                return $this->render('App/Report/duplicate_form.html.twig', [
-                    'form' => $form->createView(),
-                    'original' => $original,
-                    'errors' => $errors,
-                ]);
-            }
-
-            $em->persist($new);
-            $em->flush();
-
-            // Clone des lignes
-            foreach ($original->getLines() as $line) {
-
-                $newLine = new ReportLine();
-               // dd($original->getLines());
-                $newLine->setKm($line->getKm());
-                $newLine->setIsReturn($line->getIsReturn());
-                $newLine->setKmTotal($line->getKmTotal());
-                $newLine->setAmount($line->getAmount());
-                $newLine->setStartAdress($line->getStartAdress());
-                $newLine->setEndAdress($line->getEndAdress());
-                $newLine->setComment($line->getComment());
-                $newLine->setVehicule($line->getVehicule());
-                $newLine->setScale($line->getScale());
-
-                // Ajustement de la date
-                $adjusted = $line->getTravelDate()
-                    ->setDate(
-                        $year,
-                        $month,
-                        min($line->getTravelDate()->format('d'), $end->format('d'))
-                    );
-
-                $newLine->setTravelDate($adjusted);
-                $newLine->setReport($new);
-
-                $em->persist($newLine);
-                $em->flush();
-            }
-
-            // Redirection vers EDIT du report dupliqué
-            $url = $adminUrlGenerator
-                ->setController(self::class)
-                ->setAction(Action::EDIT)
-                ->setEntityId($new->getId())
-                ->generateUrl();
-
-            return $this->redirect($url);
-        }
-
-        return $this->render('App/Report/duplicate_form.html.twig', [
-            'form' => $form->createView(),
-            'original' => $original,
-        ]);
     }
 
     public function exportXls(AdminContext $context): Response

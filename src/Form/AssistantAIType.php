@@ -31,7 +31,7 @@ class AssistantAIType extends AbstractType
                 'choices' => [
                     'Dupliquer une semaine' => 'duplicate_week',
                     'Dupliquer un trajet' => 'duplicate_trip',
-                    //'Dupliquer le rapport' => 'duplicate_report',
+                    'Dupliquer le rapport' => 'duplicate_report',
                 ],
                 'expanded' => true,
                 'multiple' => false,
@@ -98,8 +98,8 @@ class AssistantAIType extends AbstractType
                         $form->add('destination', ChoiceType::class, [
                             'label' => 'Destination',
                             'choices' => [
-                                'Semaine suivante' => 'next_week',
-                                'Tout le mois' => 'full_month',
+                                'Semaine suivante du mois' => 'next_week',
+                                'Toutes les autres semaines du mois' => 'full_month',
                             ],
                             'required' => true,
                             'mapped' => false,
@@ -132,6 +132,16 @@ class AssistantAIType extends AbstractType
                             'placeholder' => 'Choisissez une période',
                             'mapped' => false,
                             'required' => true,
+                        ])
+                        ->add('copy_mode', ChoiceType::class, [
+                            'label' => 'Mode de copie',
+                            'choices' => [
+                                'Semaine pour semaine' => 'week_for_week',
+                                'Jour pour jour' => 'day_for_day',
+                            ],
+                            'expanded' => true,
+                            'mapped' => false,
+                            'data' => 'week_for_week', // Valeur par défaut
                         ]);
                         break;
 

@@ -16,7 +16,7 @@ class TripDuplicationService
         $this->entityManager = $entityManager;
     }
     
-    public function generatePreviewTrips(Report $report, string $action, string $source, string $destination): array
+    public function generatePreviewTrips(Report $report, string $action, string $source, string $destination, ?string $copyMode = 'week_for_week'): array
     {
         $previewTrips = [];
 
@@ -42,8 +42,12 @@ class TripDuplicationService
                 $dayOfWeek = (int)$originalDate->format('N'); // 1 (lundi) à 7 (dimanche)
 
                 // Pour chaque semaine cible
-                foreach ($targetWeeks as $targetWeek) {
+                foreach ($targetWeeks as $targetWeek)  
+                {
                     // Calculer la date cible
+                    if($targetWeek === $sourceWeekNumber) {
+                        continue;
+                    }
                     $targetDate = $this->calculateTargetDate($sourceWeekDate, $targetWeek, $dayOfWeek);
 
                     // Vérifier que la date cible est dans le mois du rapport
@@ -54,7 +58,7 @@ class TripDuplicationService
             }
         }
 
-        if ($action === 'duplicate_trip') {
+        elseif ($action === 'duplicate_trip') {
             // Récupérer le trajet source
             $trip = $report->getReportLineById($source);
             if (!$trip) {
@@ -76,6 +80,40 @@ class TripDuplicationService
                 case 'all_working_days':
                     $previewTrips = $this->duplicateToAllWorkingDays($trip, $originalDate, $report);
                     break;
+            }
+        }
+
+        elseif ($action === 'duplicate_report') {
+            // Récupérer tous les trajets du rapport source
+            $sourceLines = $report->getLines();
+            if ($sourceLines->isEmpty()) {
+                return [];
+            }
+
+            // Extraire l'année et le mois de la période cible (format : YYYY-MM)
+            [$targetYear, $targetMonth] = explode('-', $destination);
+
+            // Pour chaque trajet du rapport source
+            foreach ($sourceLines as $line) {
+                $originalDate = $line->getTravelDate();
+                if ($copyMode === 'day_for_day') {
+                    // Copie jour pour jour (ex. : 4 mars → 4 avril)
+                    $targetDate = new DateTime(sprintf('%04d-%02d-%02d', $targetYear, $targetMonth, (int)$originalDate->format('d')));
+                    if ((int)$targetDate->format('m') === (int) $targetMonth) {
+                        $previewTrips[] = $this->createPreviewTrip($line, $targetDate->format('Y-m-d'));
+                    }
+                } else {
+                    $dayOfWeek = (int)$originalDate->format('N'); // Jour de la semaine (1-7)
+                    $dayOfMonth = (int)$originalDate->format('j'); // Jour du mois (1-31)
+
+                    // Calculer la date cible dans le mois/année cible
+                    $targetDate = $this->calculateTargetDateForReportDuplication($originalDate, $targetYear, $targetMonth, $dayOfWeek, $dayOfMonth);
+
+                    // Vérifier que la date cible est valide (dans le mois cible)
+                    if ($targetDate) {
+                        $previewTrips[] = $this->createPreviewTrip($line, $targetDate->format('Y-m-d'));
+                    }
+                }
             }
         }
 
@@ -113,7 +151,6 @@ class TripDuplicationService
 
         return $targetWeeks;
     }
-
 
 
     private function calculateTargetDate(DateTime $sourceWeekDate, int $targetWeek, int $dayOfWeek): DateTime
@@ -178,8 +215,6 @@ class TripDuplicationService
         return $previewTrips;
     }
 
-
-
     // Dupliquer le trajet sur tous les jours ouvrables du mois
     private function duplicateToAllWorkingDays($trip, DateTime $originalDate, Report $report): array
     {
@@ -200,14 +235,68 @@ class TripDuplicationService
         return $previewTrips;
     }
 
-    public function duplicateReport(Report $sourceReport, string $targetPeriod): Report
+    private function calculateTargetDateForReportDuplication(DateTime $originalDate, int $targetYear, int $targetMonth, int $dayOfWeek, int $dayOfMonth): ?DateTime
+    {
+        // Trouver le premier jour du mois cible
+        $firstDayOfTargetMonth = new DateTime("first day of $targetYear-$targetMonth");
+
+        // Trouver le premier jour de la semaine cible qui correspond au jour de semaine du trajet source
+        $firstDayOfWeekInTargetMonth = clone $firstDayOfTargetMonth;
+        while ((int)$firstDayOfWeekInTargetMonth->format('N') !== $dayOfWeek) {
+            $firstDayOfWeekInTargetMonth->modify('+1 day');
+        }
+
+        // Calculer la date cible en conservant le jour de semaine
+        $targetDate = clone $firstDayOfWeekInTargetMonth;
+        $weekOffset = (int)ceil($dayOfMonth / 7) - 1; // Décalage en semaines
+        $targetDate->modify("+$weekOffset weeks");
+
+        // Vérifier que la date cible est toujours dans le mois cible
+        if ((int)$targetDate->format('m') !== $targetMonth) {
+            // Si on dépasse la fin du mois, reculer au dernier jour du mois pour ce jour de semaine
+            $lastDayOfTargetMonth = new DateTime("last day of $targetYear-$targetMonth");
+            while ((int)$targetDate->format('N') !== $dayOfWeek && $targetDate > $firstDayOfTargetMonth) {
+                $targetDate->modify('-1 week');
+            }
+        }
+
+        // Vérifier que la date cible est toujours dans le mois cible
+        if ((int)$targetDate->format('m') === $targetMonth) {
+            return $targetDate;
+        }
+
+        return null;
+    }
+
+    private function createPreviewTrip(ReportLine $trip, $targetDate): array
+    {
+        return [
+            'date' => $targetDate,
+            'start' => $trip->getStartAdress(),
+            'end' => $trip->getEndAdress(),
+            'formattedStart' => $trip->formatAddressWithName($trip->getStartAdress()),
+            'formattedEnd' => $trip->formatAddressWithName($trip->getEndAdress()),
+            'km' => $trip->getKm(),
+            'km_total' => $trip->getKmTotal(),
+            'is_return' => $trip->getIsReturn(),
+            'vehicule_id' => $trip->getVehicule()->getId(),
+            'amount' => $trip->getAmount(),
+            'comment' => $trip->getComment(),
+        ];
+    }
+
+    
+    public function duplicateReport(Report $sourceReport, string $targetPeriod, string $copyMode): Report
     {
         [$year, $month] = explode('-', $targetPeriod);
+        $targetYear = (int) $year;
+        $targetMonth = (int) $month;
+
         $newReport = new Report();
 
         // Définir la nouvelle période via start_date et end_date
-        $startDate = new \DateTime("first day of $year-$month");
-        $endDate = new \DateTime("last day of $year-$month");
+        $startDate = new \DateTime("first day of $targetYear-$targetMonth");
+        $endDate = new \DateTime("last day of $targetYear-$targetMonth");
         $newReport->setStartDate($startDate);
         $newReport->setEndDate($endDate);
         $newReport->setUser($sourceReport->getUser());
@@ -225,6 +314,31 @@ class TripDuplicationService
         /* Clone des lignes */
         foreach ($sourceReport->getLines() as $line) {
 
+             $originalDate = $line->getTravelDate();
+
+            // Calcul de la date cible selon le mode
+            if ($copyMode === 'day_for_day') {
+                $day = min((int) $originalDate->format('d'), (int) $endDate->format('d'));
+                $targetDate = new \DateTime(sprintf('%04d-%02d-%02d', $targetYear, $targetMonth, $day));
+            } else {
+                // week_for_week : on conserve "semaine dans le mois" + jour de semaine
+                $dayOfWeek  = (int) $originalDate->format('N');
+                $dayOfMonth = (int) $originalDate->format('j');
+
+                $targetDate = $this->calculateTargetDateForReportDuplication(
+                    $originalDate,
+                    $targetYear,
+                    $targetMonth,
+                    $dayOfWeek,
+                    $dayOfMonth
+                );
+
+                // si pas de date valide dans le mois cible -> on skip la ligne
+                if (!$targetDate) {
+                    continue;
+                }
+            }
+
             $newLine = new ReportLine();
             // dd($original->getLines());
             $newLine->setKm($line->getKm());
@@ -237,37 +351,15 @@ class TripDuplicationService
             $newLine->setVehicule($line->getVehicule());
             $newLine->setScale($line->getScale());
 
-            /* Ajustement de la date */
-            $adjusted = $line->getTravelDate()
-                ->setDate(
-                    $year,
-                    $month,
-                    min($line->getTravelDate()->format('d'), $endDate->format('d'))
-                );
-
-            $newLine->setTravelDate($adjusted);
-            $newLine->setReport($sourceReport);
+            $newLine->setTravelDate($targetDate);
+            $newLine->setReport($newReport);
 
             $this->entityManager->persist($newLine);
-            $this->entityManager->flush();
+            
         }
+        $this->entityManager->flush();
 
         return $newReport;
-    }
-
-    private function createPreviewTrip(ReportLine $trip, $targetDate): array
-    {
-        return [
-            'date' => $targetDate,
-            'start' => $trip->getStartAdress(),
-            'end' => $trip->getEndAdress(),
-            'km' => $trip->getKm(),
-            'km_total' => $trip->getKmTotal(),
-            'is_return' => $trip->getIsReturn(),
-            'vehicule_id' => $trip->getVehicule()->getId(),
-            'amount' => $trip->getAmount(),
-            'comment' => $trip->getComment(),
-        ];
     }
 
 }

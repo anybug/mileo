@@ -14,5 +14,9 @@
 
     {% if form.target_period is defined %}    
         {{ form_row(form.target_period) }}
+    {% endif %}  
+
+    {% if form.copy_mode is defined %}    
+        {{ form_row(form.copy_mode) }}
     {% endif %}    
 </div>

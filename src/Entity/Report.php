@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Validator\Constraints as AppAssert;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\Common\Collections\Order;
 
 #[ORM\Entity(repositoryClass: ReportRepository::class)]
 #[AppAssert\NewReport(groups: ["new"])]
@@ -209,7 +210,8 @@ class Report
     public function getLines() : Collection 
     {
         //tri par année
-        $sort = new Criteria(null, ['travel_date' => Criteria::ASC]);
+        $sort = Criteria::create()
+            ->orderBy(['travel_date' => Order::Ascending]);
         //$sortedLines = $this->lines->matching($sort);
         return $this->lines->matching($sort);
     }

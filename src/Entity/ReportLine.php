@@ -256,4 +256,25 @@ class ReportLine
     {
         $this->id = null;
     }
+
+    public function formatAddressWithName(?string $address): string
+    {
+        $address = (string) $address;
+
+        $name = $this->getReport()->getUser()->resolveFavoriteAddressName($address);
+        
+        $addrEsc = htmlspecialchars($address, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        if ($name) {
+            $nameEsc = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+            return sprintf(
+                '<div class="d-flex flex-column lh-sm"><span class="fw-semibold">%s</span><small class="text-muted">%s</small></div>',
+                $nameEsc,
+                $addrEsc
+            );
+        }
+
+        return sprintf('<span>%s</span>', $addrEsc);
+    }
 }
