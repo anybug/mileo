@@ -111,6 +111,7 @@ class ReportLineAppCrudController extends AbstractCrudController
             ->overrideTemplate('crud/filters', 'App/ReportLine/filters.html.twig')
             ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
             ->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
+            ->setPaginatorPageSize(30)
             ;
     }
 
