@@ -1,8 +1,9 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
+{% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %}
 {% set page_title = "L'équipe Mileo à votre service !" %}
 
-{% block content_title %} {{ page_title|trans }}{% endblock %}
+{% block page_title %} {{ page_title|trans }}{% endblock %}
 {% block main %}
 
 <article class="content">
@@ -33,51 +34,29 @@
                     {# TYPE #}
                     <div class="col-12 col-md-6">
                         {{ form_label(form.type) }}
-                        {{ form_widget(form.type, {'attr': {'class': 'form-select w-100'}}) }}
+                        {{ form_widget(form.type) }}
                         {{ form_errors(form.type) }}
                     </div>
 
                     {# CATEGORY #}
                     <div class="col-12 col-md-6" id="category-wrapper">
                         {{ form_label(form.category) }}
-                        {{ form_widget(form.category, {'attr': {'class': 'form-select w-100'}}) }}
-                        {{ form_errors(form.category) }}
+                        {{ form_widget(form.category) }}
+                        {# form_errors(form.category) #}
                     </div>
 
-                    {# EMAIL (READONLY) 
-                    <div class="col-12">
-                        {{ form_label(form.email, null, {'label_attr': {'class': 'form-label'}}) }}
-                        {{ form_widget(form.email, {
-                            'attr': {
-                                'class': 'form-control w-100 email-readonly',
-                                'readonly': true,
-                                'tabindex': '-1'
-                            }
-                        }) }}
-                        {{ form_errors(form.email) }}
-                    </div> #}
 
                     {# DESCRIPTION #}
                     <div class="col-12">
                         {{ form_label(form.description) }}
-                        {{ form_widget(form.description, {
-                            'attr': {
-                                'class': 'form-control w-100',
-                                'rows': 8
-                            }
-                        }) }}
+                        {{ form_widget(form.description) }}
                         {{ form_errors(form.description) }}
                     </div>
 
                     {# SCREENSHOT #}
                     <div class="col-12">
                         {{ form_label(form.screenshot) }}
-                        {{ form_widget(form.screenshot, {
-                            'attr': {
-                                'class': 'form-control w-100',
-                                'accept': 'image/png,image/jpeg,image/webp'
-                            }
-                        }) }}
+                        {{ form_widget(form.screenshot) }}
                         {{ form_help(form.screenshot) }}
                         {{ form_errors(form.screenshot) }}
                     </div>
@@ -100,16 +79,6 @@
 </article>
 
 
-    {# === STYLES === #}
-    <style>
-        .email-readonly {
-            pointer-events: none;
-            user-select: none;
-            background-color: #f8f9fa;
-            cursor: not-allowed;
-        }
-    </style>
-
     {# === JS : REFRESH CATEGORY ON TYPE CHANGE === #}
     <script>
         (function () {
@@ -122,9 +91,11 @@
             typeSelect.addEventListener('change', function () {
                 const data = new FormData(form);
 
-                // Ne pas envoyer le fichier lors du refresh AJAX
+                // Ne pas envoyer le fichier ni la catégorie lors du refresh AJAX
                 const screenshotName = typeSelect.name.replace('[type]', '[screenshot]');
+                const categoryName = typeSelect.name.replace('[type]', '[category]');
                 data.delete(screenshotName);
+                data.delete(categoryName);
 
                 fetch(window.location.href, {
                     method: 'POST',
