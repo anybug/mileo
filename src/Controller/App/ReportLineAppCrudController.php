@@ -125,24 +125,19 @@ class ReportLineAppCrudController extends AbstractCrudController
     public function index(AdminContext $context)
     {
         if (!$this->getUser()->getSubscription()->isValid()) {
-
-            $url = $this->adminUrlGenerator
-            ->setController(UserAppCrudController::class)
-            ->setAction(Action::INDEX)
-            ->generateUrl();
-
-            return $this->redirect($url);
+            return $this->redirect(
+                $this->adminUrlGenerator
+                    ->setController(UserAppCrudController::class)
+                    ->setAction(Action::INDEX)
+                    ->generateUrl()
+            );
         }
 
-        $responseParameters = parent::index($context);
-        if ($responseParameters instanceof KeyValueStore) {
-            if (count($this->getUser()->getVehicules()) == 0) {
-                $responseParameters->set("message",'Veuillez créer votre véhicule avant de commencer à créer vos trajets');
-            }
+        if (!$this->getUser()->hasCompletedSetup()) {
+            return $this->redirectToRoute('app', ['menuIndex' => 0, 'submenuIndex' => -1]);
         }
 
-
-        return $responseParameters;
+        return parent::index($context);
     }
 
     public function configureActions(Actions $actions): Actions

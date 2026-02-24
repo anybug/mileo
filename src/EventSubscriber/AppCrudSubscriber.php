@@ -42,7 +42,7 @@ class AppCrudSubscriber implements EventSubscriberInterface
         $context = $event->getAdminContext();
         $entityFqcn = $context->getEntity()->getFqcn();
         $entity = new $entityFqcn();
-        $dataParams = false;
+        $filterParams = false;
 
         if ($entity instanceof ReportLine) {
             //pas si Ajax car par compatilble avec la modale de adresses favorites
@@ -51,21 +51,20 @@ class AppCrudSubscriber implements EventSubscriberInterface
                 {
                     $reportline = $this->entityManager->getRepository(ReportLine::class)->getLastLineForUser();
                     if ($reportline) {
-                        $dataParams = $reportline->getTravelDate()->format('F')."/".$reportline->getTravelDate()->format('Y');
-                    } else {
-                        $now = new \DateTime();
-                        $dataParams = $now->format('F')."/".$now->format('Y');
+                        $filterParams = $reportline->getTravelDate()->format('F')."/".$reportline->getTravelDate()->format('Y');
                     }
 
                     $url = $this->adminUrlGenerator
                         ->setController(ReportLineAppCrudController::class)
                         ->setAction(Action::INDEX)
-                        ->set("filters[period][value]", $dataParams)
+                        ->set("filters[period][value]", $filterParams)
                         ->generateUrl()
                     ;
-                        
-                    $response = new RedirectResponse($url);
-                    $event->setResponse($response);
+
+                    if($filterParams){
+                        $response = new RedirectResponse($url);
+                        $event->setResponse($response);
+                    }
                 }
             }
         }
@@ -77,21 +76,23 @@ class AppCrudSubscriber implements EventSubscriberInterface
                 $now = new \DateTime();
                 if($report) {
                     $period = $this->security->getUser()->generateBalancePeriodByReport($report);
-                }else{
+                    $filterParams = $this->security->getUser()->getFormattedBalancePeriod($period);
+                }/*else{
                     $period = $this->security->getUser()->getCurrentFiscalPeriod();
-                }
+                }*/
                 
-                $choice = $this->security->getUser()->getFormattedBalancePeriod($period);
                 
                 $url = $this->adminUrlGenerator
-                ->setController(ReportAppCrudController::class)
-                ->setAction(Action::INDEX)
-                ->set("filters[Period][value]",$choice)
-                ->generateUrl()
+                    ->setController(ReportAppCrudController::class)
+                    ->setAction(Action::INDEX)
+                    ->set("filters[Period][value]",$filterParams)
+                    ->generateUrl()
                 ;
                 
-                $response = new RedirectResponse($url);
-                $event->setResponse($response);
+                if($filterParams){
+                    $response = new RedirectResponse($url);
+                    $event->setResponse($response);
+                }
             }   
         }
         

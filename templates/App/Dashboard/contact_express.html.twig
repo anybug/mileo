@@ -1,6 +1,6 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
-{% set page_title = 'L\'équipe Mileo à votre service !' %}
+{% set page_title = "L'équipe Mileo à votre service !" %}
 
 {% block content_title %} {{ page_title|trans }}{% endblock %}
 {% block main %}
@@ -63,8 +63,7 @@
                         {{ form_widget(form.description, {
                             'attr': {
                                 'class': 'form-control w-100',
-                                'rows': 8,
-                                'placeholder': 'Décris le problème rencontré avec le plus de détails possible...'
+                                'rows': 8
                             }
                         }) }}
                         {{ form_errors(form.description) }}
