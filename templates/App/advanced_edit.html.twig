@@ -1,9 +1,8 @@
 {% extends '@!EasyAdmin/crud/edit.html.twig' %}
 
-{% block content_title %}
-    {% set url_back = ea_url()
-        .setAction('index')
-    %}
-    <a href='{{ url_back|raw }}'><i class="fa-solid fa-arrow-left"></i></a>
+{% block body_javascript %}
     {{ parent() }}
+
+    {# Modale favoris (HTML statique) #}
+    {% include 'App/ReportLine/_favorites_modal.html.twig' %}
 {% endblock %}

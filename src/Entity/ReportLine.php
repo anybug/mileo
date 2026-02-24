@@ -6,10 +6,13 @@ use App\Repository\ReportLineRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Gedmo\Timestampable\Traits\TimestampableEntity;
 
 #[ORM\Entity(repositoryClass: ReportLineRepository::class)]
 class ReportLine
 {
+    use TimestampableEntity;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
@@ -58,12 +61,6 @@ class ReportLine
     #[Assert\NotBlank]
     private $comment;
     
-    #[ORM\Column(type: 'datetime')]
-    private $created_at;
-
-    #[ORM\Column(type: 'datetime')]
-    private $updated_at;
-
     public function getId(): ?int
     {
         return $this->id;
@@ -165,30 +162,6 @@ class ReportLine
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->created_at;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $created_at): self
-    {
-        $this->created_at = $created_at;
-
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeInterface
-    {
-        return $this->updated_at;
-    }
-
-    public function setUpdatedAt(\DateTimeInterface $updated_at): self
-    {
-        $this->updated_at = $updated_at;
-
-        return $this;
-    }
-
     public function calculateAmount()
     {
         $amount = ($this->getScale()->getRate()*$this->getKmTotal()) /*+ ($this->getScale()->getAmount()/12*)*/;
@@ -203,7 +176,7 @@ class ReportLine
         return $this->amount;
     }
 
-    public function setAmount(string $amount): self
+    public function setAmount(?string $amount): self
     {
         $this->amount = $amount;
 
@@ -249,7 +222,22 @@ class ReportLine
 
     public function __toString()
     {
-        return "Trajet du ".$this->travel_date->format("d/m/Y")." de ". $this->km_total ." km";
+        $fmt = new \IntlDateFormatter(
+            'fr_FR',
+            \IntlDateFormatter::FULL,
+            \IntlDateFormatter::FULL,
+            'Europe/Paris',
+            \IntlDateFormatter::GREGORIAN,
+            'ccc'
+        );
+
+        $travelDay = ucfirst($fmt->format($this->travel_date));
+    
+        return sprintf("Trajet du %s %s de %s km",
+            $travelDay,
+            $this->travel_date->format("d/m/Y"),
+            $this->km_total 
+        );
     }
 
     public function resetId()

@@ -1,17 +1,15 @@
+/** Début scripts jQuery -> TODO: tout mettre à jour en vanilla */
 import $ from 'jquery';
-global.$ = global.jQuery = $;
+window.$ = window.jQuery = $;
 
 $(document).ready(function () {
 
+    console.log('AssetMapper est opérationnel !');
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-});
 
-
-
-$(document).ready(function () {
     $("#Report_Year_month").css("display", "none").val(1);
     $("#Report_Year_day").css("display", "none").val(1);
     $(".report_start_date ").parent().parent().parent().css("display", "none");
@@ -20,6 +18,15 @@ $(document).ready(function () {
     initAutocomplete();
     //init du date picker pour rester dans le même mois lors de la saisie d'un rapport
     dateTypeRange();
+
+    //listener pour les filtres
+    $(document).on('change', '#filters_Period_value', function(e) {
+        document.getElementById("filters").submit();
+    });
+
+    $(document).on('change', '#filters_period_value', function(e) {
+        document.getElementById("filters").submit();
+    });
 
     $(document).on('click', '.field-collection-add-button', function () {
         initAutocomplete();
@@ -167,25 +174,7 @@ $(document).ready(function () {
 
     });
 
-    // copy report line -> replaced by vanilla
-    /*$(document).on('click', '.copy_link', function (e) {
-        e.preventDefault();
-        var inputs = $(this).parent().parent().find('input, textarea, select');
-        var values = new Array;
-        var checked = false;
-        $.each(inputs, function (index, value) {
-            if ($(value).hasClass('report_lines_is_return') && $(value).prop('checked')) {
-                checked = true;
-            }
-
-            values.push($(value).val());
-
-        });
-        CopyLine(values, checked);
-    });*/
-
     // footer in Report index
-
     $(document).on('change', '.form_scale', function (e) {
         let $obj = $(this);
         let $form = $obj.closest('form');
@@ -217,29 +206,31 @@ var delay = (function () {
 })();
 
 function doModal(heading, content, height) {
-    let html = '<div id="dynamicModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="title-modal" aria-hidden="true">';
-    html += '<div class="modal-dialog modal-lg">';
-    html += '<div class="modal-content">';
-    html += '<div class="modal-header">';
-    html += '<h5 class="modal-title" id="title-modal">' + heading + '</h5>';
-    html += '<button type="button" class="btn btn-close" data-dismiss="modal" aria-label="Close"></button>';
-    html += '</div>';
-    html += '<div class="modal-body" ' + height + '>';
-    html += content;
-    html += '</div>';
-    html += '</div>';  // body
-    html += '</div>';  // content
-    html += '</div>';  // modalWindow
-    $('body').append(html);
-    $("#dynamicModal").modal();
-    $("#dynamicModal").modal('show');
-    $('#dynamicModal').on('hidden.bs.modal', function (e) {
-        $(this).remove();
-    });
-    $(document).on('click', ".btn-close", function () {
-        $('#dynamicModal').modal('hide');
-    });
+  const html = `
+    <div id="dynamicModal" class="modal fade" tabindex="-1" aria-labelledby="title-modal" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="title-modal">${heading}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" ${height ?? ''}>
+            ${content}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
+  $('body').append(html);
+
+  const el = document.getElementById('dynamicModal');
+  const modal = new bootstrap.Modal(el);
+  modal.show();
+
+  el.addEventListener('hidden.bs.modal', () => {
+    el.remove();
+  });
 }
 
 function initAutocomplete() {
@@ -493,26 +484,3 @@ function favoriteModal(btn, urlAjax, classToChange, line) {
         },
     });
 }
-
-/*function CopyLine(values, checked) {
-    $('form').find('.field-collection-add-button').click()
-    initAutocomplete();
-    dateTypeRange();
-    let lines = $('form').find('.field-collection-item');
-
-    let line = lines.last();
-    line.find('.report_lines_travel_date').val(values[0]);
-    line.find('.report_lines_vehicule').val(values[1]);
-    line.find('.report_lines_start').val(values[2]);
-    line.find('.report_lines_end').val(values[3]);
-    if (checked) {
-        line.find('.report_lines_is_return').prop("checked", true);
-    }
-    line.find('.report_lines_km').val(values[4]);
-    line.find('.report_lines_km_total').val(values[6]);
-    line.find('.report_lines_comment').val(values[7]);
-    line.find('.report_lines_amount').val(values[8]);
-
-    totalForReport();
-    focus(line);
-}*/

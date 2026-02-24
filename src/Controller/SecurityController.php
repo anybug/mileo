@@ -39,6 +39,11 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class SecurityController extends AbstractController
 {
+    /** Home page default */
+    public function default(Request $request) 
+    {
+        return $this->redirectToRoute('app');
+    }
 
     /**
      * Registration

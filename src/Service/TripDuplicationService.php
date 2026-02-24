@@ -4,20 +4,26 @@ namespace App\Service;
 
 use App\Entity\Report;
 use App\Entity\ReportLine;
+use App\Entity\VehiculesReport;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Event\AfterEntityUpdatedEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class TripDuplicationService
 {
     private $entityManager;
+    private $dispatcher;
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher)
     {
         $this->entityManager = $entityManager;
+        $this->dispatcher = $dispatcher;
     }
     
     public function generatePreviewTrips(Report $report, string $action, string $source, string $destination, ?string $copyMode = 'week_for_week'): array
     {
+
         $previewTrips = [];
 
         if ($action === 'duplicate_week') {
@@ -235,7 +241,7 @@ class TripDuplicationService
         return $previewTrips;
     }
 
-    private function calculateTargetDateForReportDuplication(DateTime $originalDate, int $targetYear, int $targetMonth, int $dayOfWeek, int $dayOfMonth): ?DateTime
+    public function calculateTargetDateForReportDuplication(DateTime $originalDate, int $targetYear, int $targetMonth, int $dayOfWeek, int $dayOfMonth): ?DateTime
     {
         // Trouver le premier jour du mois cible
         $firstDayOfTargetMonth = new DateTime("first day of $targetYear-$targetMonth");
@@ -285,8 +291,7 @@ class TripDuplicationService
         ];
     }
 
-    
-    public function duplicateReport(Report $sourceReport, string $targetPeriod, string $copyMode): Report
+    public function duplicateReport(Report $sourceReport, string $targetPeriod, ?string $copyMode = null): Report
     {
         [$year, $month] = explode('-', $targetPeriod);
         $targetYear = (int) $year;
@@ -300,14 +305,8 @@ class TripDuplicationService
         $newReport->setStartDate($startDate);
         $newReport->setEndDate($endDate);
         $newReport->setUser($sourceReport->getUser());
-
-        // Dupliquer les lignes du rapport
-        /*foreach ($sourceReport->getLines() as $line) {
-            $newLine = clone $line;
-            $newLine->setReport($newReport);
-            $newReport->addLine($newLine);
-        }*/
-
+        $newReport->calculateKm();
+        $newReport->calculateTotal();
         $this->entityManager->persist($newReport);
         $this->entityManager->flush();
 
@@ -350,14 +349,22 @@ class TripDuplicationService
             $newLine->setComment($line->getComment());
             $newLine->setVehicule($line->getVehicule());
             $newLine->setScale($line->getScale());
-
             $newLine->setTravelDate($targetDate);
+            $scale = $newLine->getVehicule()->getScale();
+            $newLine->setScale($scale);
+            $newLine->calculateAmount();
             $newLine->setReport($newReport);
 
             $this->entityManager->persist($newLine);
-            
+            $this->entityManager->flush();
+                        
         }
-        $this->entityManager->flush();
+
+        if ($this->entityManager->contains($newReport)) {
+            $this->entityManager->refresh($newReport); 
+        }
+
+        $this->dispatcher->dispatch(new AfterEntityUpdatedEvent($newReport));
 
         return $newReport;
     }

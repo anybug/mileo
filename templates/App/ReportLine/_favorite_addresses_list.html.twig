@@ -1,0 +1,13 @@
+{% if addresses is empty %}
+  <div class="text-muted">Vous n'avez pas d'adresse favorite.</div>
+{% else %}
+  <div class="list-group">
+    {% for label, value in addresses %}
+      <button type="button"
+              class="list-group-item list-group-item-action js-fav-address"
+              data-value="{{ value|e('html_attr') }}">
+        {{ label }}
+      </button>
+    {% endfor %}
+  </div>
+{% endif %}

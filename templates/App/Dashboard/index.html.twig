@@ -25,17 +25,20 @@
                 <input type="hidden" name="submenuIndex" value="{{ app.request.get('submenuIndex') }}">
             </form>
             <script>
-                $('.yearSelected').on('change', function(){
-                    console.log('changed!');
-                    $('#yearSelected').submit();
+                document.addEventListener('DOMContentLoaded', () => {
+                const select = document.querySelector('.yearSelected');
+                const form = document.getElementById('yearSelected');
+                if (!select || !form) return;
+
+                select.addEventListener('change', () => form.submit());
                 });
             </script>
 
             <div class="card-group">
-                {% if chartAnnuel.data.labels %}
+                {% if chartAnnuel|length > 0 %}
                     <div class="p-5 col-lg-6">{{ render_chart(chartAnnuel) }}</div>
                 {% endif %}
-                {% if chartTotal.data.labels %}
+                {% if chartTotal|length > 0 %}
                     <div class="p-5 col-lg-6">{{ render_chart(chartTotal) }}</div>
                 {% endif %}
             {% else %}

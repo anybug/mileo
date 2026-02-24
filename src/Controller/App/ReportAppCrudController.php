@@ -11,11 +11,10 @@ use App\Form\ReportDuplicateType;
 use App\Form\ReportLineType;
 use App\Form\ReportTotalScaleType;
 use App\Service\MistralApiService;
-use App\Service\XlsxExporter;
 use App\Service\TripDuplicationService;
+use App\Service\XlsxExporter;
 use App\Utils\ReportPdf;
 use App\Validator\Constraints\NewReport;
-
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
@@ -30,6 +29,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
+use EasyCorp\Bundle\EasyAdminBundle\Event\AfterEntityUpdatedEvent;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
@@ -38,7 +38,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -48,7 +47,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class ReportAppCrudController extends AbstractCrudController
 {
@@ -58,6 +57,7 @@ class ReportAppCrudController extends AbstractCrudController
     private $mistral;
     private $tripDuplicator;
     private $logger;
+    private $dispatcher;
 
     public function __construct(
         AdminUrlGenerator $adminUrlGenerator,
@@ -66,6 +66,7 @@ class ReportAppCrudController extends AbstractCrudController
         MistralApiService $mistral,
         TripDuplicationService $tripDuplicator,
         LoggerInterface $logger,
+        EventDispatcherInterface $dispatcher
     ) {
         $this->adminUrlGenerator = $adminUrlGenerator;
         $this->exporter = $exporter;
@@ -73,6 +74,7 @@ class ReportAppCrudController extends AbstractCrudController
         $this->mistral = $mistral;
         $this->tripDuplicator = $tripDuplicator;
         $this->logger = $logger;
+        $this->dispatcher = $dispatcher;
     }
 
     public static function getEntityFqcn(): string
@@ -193,25 +195,26 @@ class ReportAppCrudController extends AbstractCrudController
         $actions
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
             ->remove(Crud::PAGE_NEW, Action::SAVE_AND_ADD_ANOTHER)
+            ->remove(Crud::PAGE_INDEX, Action::BATCH_DELETE)
             ->add(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE)
             ->update(Crud::PAGE_NEW, Action::SAVE_AND_CONTINUE, fn(Action $a) =>
                 $a->setIcon("fa-solid fa-arrow-right")
                 ->setLabel("Next")
-                ->setCssClass('btn btn-primary suivant')
+                ->asPrimaryAction()
             )
 
             ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $a) =>
-                $a->setCssClass('btn btn-primary new-report-action')
+                $a->setCssClass('new-report-action')
+                ->asPrimaryAction()
             )
             ->add(Crud::PAGE_INDEX, $generatePdf)
             ->add(Crud::PAGE_INDEX, $exportXls)
 			->add(Crud::PAGE_INDEX, $assistantAI)
             ->add(Crud::PAGE_EDIT, $assistantAI)
-            ->reorder(Crud::PAGE_INDEX, ['assistant', Action::EDIT, 'generatePdf', 'exportXls', Action::DELETE,])
-
+            ->reorder(Crud::PAGE_INDEX, ['assistant', Action::EDIT, 'generatePdf', 'exportXls', Action::DELETE])
+            ->reorder(Crud::PAGE_NEW, [Action::SAVE_AND_CONTINUE, Action::INDEX])
+            ->reorder(Crud::PAGE_EDIT, [Action::SAVE_AND_RETURN, Action::SAVE_AND_CONTINUE, 'assistant', Action::INDEX])
         ;
-
-        
 
         return $actions;
 
@@ -260,21 +263,30 @@ class ReportAppCrudController extends AbstractCrudController
                     // Exemple : $sourceWeek et $destination sont disponibles
                     $source = $form->get('source_week')->getData();
                     $destination = $form->get('destination')->getData();
+                    if(!$this->checkRequiredFields([$action, $source, $destination])){
+                        return new JsonResponse(['erreur' => 'Saisie invalide'], 400);
+                    }
                     $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, $source, $destination);
-
                     break;
                 case 'duplicate_trip':
                     $source = $form->get('trip_id')->getData();
                     $destination = $form->get('destination')->getData();
-                    // Exemple : $tripId et $destination sont disponibles
+                    if(!$this->checkRequiredFields([$action, $source, $destination])){
+                        return new JsonResponse(['erreur' => 'Saisie invalide'], 400);
+                    }
                     $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, $source, $destination);
                     break;
                 case 'duplicate_report':
-                    $targetPeriod = $form->get('target_period')->getData();
+                    $destination = $form->get('target_period')->getData();
                     $copyMode = $form->get('copy_mode')->getData();
-                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, '', $targetPeriod, $copyMode);  
+                    if(!$this->checkRequiredFields([$action, $copyMode, $destination])){
+                        return new JsonResponse(['erreur' => 'Saisie invalide'], 400);
+                    }
+                    $previewTrips = $this->tripDuplicator->generatePreviewTrips($report, $action, '', $destination, $copyMode);  
                     break;     
-                    
+                case '':
+                    $previewTrips = [];
+                    break;    
             }
 			
 			
@@ -288,6 +300,7 @@ class ReportAppCrudController extends AbstractCrudController
                 ;	
                 
 				$tplVariables = [
+                    'action' => $action,
                     'previewTrips' => $previewTrips,
                     'report' => $report,
                     'confirmActionUrl' => $confirmActionUrl,
@@ -326,6 +339,18 @@ class ReportAppCrudController extends AbstractCrudController
             'backUrl' => $backUrl,
             'actionAjaxUrl' => $actionAjaxUrl
         ]);
+    }
+
+    private function checkRequiredFields(array $fields)
+    {
+        foreach($fields as $requiredField)
+        {   
+            if(!$requiredField || $requiredField === null || strlen($requiredField)==0){
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function assistantAjaxForm(AdminContext $context, Request $request): Response
@@ -399,6 +424,8 @@ class ReportAppCrudController extends AbstractCrudController
         $entityManager->flush();
 
         $this->addFlash('success', 'Les trajets ont été crées avec succès.');
+
+        $this->container->get('event_dispatcher')->dispatch(new AfterEntityUpdatedEvent($report));
         
         return $this->redirect($backUrl);
     }
@@ -440,13 +467,12 @@ class ReportAppCrudController extends AbstractCrudController
         return $this->redirect($url);
     }
 
-
-
     public function edit(AdminContext $context)
     {
         if ($context->getEntity()->getInstance()->getUser() !== $this->getUser()) {
             throw new AccessDeniedHttpException();
         }
+
         return parent::edit($context);
     }
 
@@ -503,9 +529,7 @@ class ReportAppCrudController extends AbstractCrudController
             throw new \Exception("Période non valide.");
         }
 
-        $period = explode(" -> ",$periodFilter);
-        $start = $period[0];
-        $end = $period[1];
+        [$start, $end] = explode(" -> ",$periodFilter);
 
         $reports = $entityManager->getRepository(Report::class)->findByPeriod($start,$end);
 
@@ -544,18 +568,15 @@ class ReportAppCrudController extends AbstractCrudController
                 {
                     if ($vr->getVehicule() === $vehicle) {
                         $vr->setScale($newScale);
-                        $reportsToUpdate[] = $report;
+                        $vr->calculateTotal();
                     }
                 }
-            }
-            $entityManager->flush();
 
-            //force le recalcul a posteriori des IK des rapports concernés selon nouveau barème
-            foreach($reportsToUpdate as $reportToUpdate)
-            {
-                $reportToUpdate->setUpdatedAt(new \DateTime());
+                $entityManager->flush();
+
+                $this->dispatcher->dispatch(new AfterEntityUpdatedEvent($report));
+                
             }
-            $entityManager->flush();
 
             $url = $this->adminUrlGenerator
                 ->setController(self::class)

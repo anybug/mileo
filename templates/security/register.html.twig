@@ -25,48 +25,11 @@
 				<div class="auth-box">
                     
                     {{ form_start(form) }}
-
-                    {#
-                    <div class="w-50 d-flex flex-row justify-content-around">
-                        <div class="personal_info">
-                            <h3>Personal Information</h3>
-                            <div>
-                                <span>Email Address<label>*</label></span>
-                                {{ form_widget(form.email) }}
-                                {{ form_errors(form.email) }}
-                            </div>
-                            <div>
-                                <span>Company<label> </label></span>
-                                {{ form_widget(form.company) }}                    
-                            </div>
-                        </div>
-                        <div class="login_info">
-                            <h3>Login Information</h3>
-                            <div id="password-register">
-                                <span>Password<label>*</label></span>
-                                {{ form_widget(form.password) }}
-                                {{ form_errors(form.password) }}
-                            </div>
-                            <div>
-                                <span>Confirm Password<label>*</label></span>
-                                {{ form_widget(form.confirm_password) }}
-                                {{ form_errors(form.confirm_password) }}
-
-                            </div>
-
-                            <div class="register-but">
-                                    <input type="submit" value="submit">
-                                    <div class="clearfix"> </div>
-                            </div>
-                        </div>
-                    </div>
-                    #}
                     {{form_rest(form)}} 
 
                     <div class="form-group text-center">
                         <button type="submit" class="form-control btn btn-primary btn-lg btn-block">{{ "Sign-up"|trans }}</button>
                     </div>
-
                        
                     {{form_end(form)}}
 				    	

@@ -3,22 +3,26 @@
 namespace App\Entity;
 
 use App\Entity\ReportLine;
+use App\Entity\User;
 use App\Entity\Vehicule;
-use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Mapping as ORM;
 use App\Repository\ReportRepository;
 use App\Repository\ScaleRepository;
+use App\Validator\Constraints as AppAssert;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use App\Validator\Constraints as AppAssert;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Order;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Timestampable\Traits\TimestampableEntity;
 
 #[ORM\Entity(repositoryClass: ReportRepository::class)]
 #[AppAssert\NewReport(groups: ["new"])]
 #[AppAssert\Report(groups: ["edit"])]
 class Report
 {
+    use TimestampableEntity;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
@@ -39,17 +43,11 @@ class Report
     #[ORM\Column(type: 'date', nullable: true)]
     private $validate_date;
 
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: 'integer', nullable: true)]
     private $km;
 
-    #[ORM\Column(type: 'decimal', precision: 8, scale: 2)]
+    #[ORM\Column(type: 'decimal', precision: 8, scale: 2, nullable: true)]
     private $total;
-
-    #[ORM\Column(type: 'datetime')]
-    private $created_at;
-
-    #[ORM\Column(type: 'datetime')]
-    private $updated_at;
 
     /**
      * @var \Doctrine\Common\Collections\Collection
@@ -128,30 +126,6 @@ class Report
         return $this;
     }
 
-    public function getKm(): ?int
-    {
-        return $this->km;
-    }
-
-    public function setKm(?int $km): self
-    {
-        $this->km = $km;
-
-        return $this;
-    }
-
-    public function getTotal(): ?float
-    {
-        return $this->total;
-    }
-
-    public function setTotal(float $total): self
-    {
-        $this->total = $total;
-
-        return $this;
-    }
-
     public function calculateTotal()
     {
         $total=0;
@@ -214,30 +188,6 @@ class Report
             ->orderBy(['travel_date' => Order::Ascending]);
         //$sortedLines = $this->lines->matching($sort);
         return $this->lines->matching($sort);
-    }
-
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->created_at;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $created_at): self
-    {
-        $this->created_at = $created_at;
-
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeInterface
-    {
-        return $this->updated_at;
-    }
-
-    public function setUpdatedAt(\DateTimeInterface $updated_at): self
-    {
-        $this->updated_at = $updated_at;
-
-        return $this;
     }
 
     public function getValidateDate(): ?\DateTimeInterface
@@ -462,6 +412,30 @@ class Report
     public function setMonth(?\DateTimeInterface $month)
     {
         $this->month = $month;
+    }
+
+    public function getKm(): ?int
+    {
+        return $this->km;
+    }
+
+    public function setKm(?int $km): static
+    {
+        $this->km = $km;
+
+        return $this;
+    }
+
+    public function getTotal(): ?string
+    {
+        return $this->total;
+    }
+
+    public function setTotal(?string $total): static
+    {
+        $this->total = $total;
+
+        return $this;
     }
     
 }

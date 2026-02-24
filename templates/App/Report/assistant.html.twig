@@ -1,19 +1,15 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 {% form_theme form '@EasyAdmin/crud/form_theme.html.twig' %}
 
-{% block page_title %}
-  <div class="d-flex align-items-center gap-2">
-    <a href="{{ backUrl }}"
-       class="text-decoration-none"
-       style="color: var(--bs-primary);"
-       title="Retour au rapport">
-      <i class="fa fa-arrow-left"></i>
-    </a>
+{% block content_title %}
+    {{ "Assistant de génération de trajets basé sur le Rapport de"|trans }} {{ report.getPeriod() }}
+{% endblock %}
 
-    <span>
-      Assistant de génération de trajets pour le Rapport de {{ report.getPeriod() }}
-    </span>
-  </div>
+{% block page_actions %}
+<a class="btn btn-secondary  action-index" href="{{ backUrl }}" role="button" data-action-name="index">
+    <span class="icon btn-icon"><i class="fa fa-arrow-left"></i></span>
+    <span class="btn-label"><span class="action-label">{{ "Retour"|trans }}</span></span>
+</a>
 {% endblock %}
 
 {% block main %}
@@ -21,17 +17,19 @@
 <article class="content">
     <section class="">
         <p class="fs-6">
-          Cet assistant (version Beta) va vous permettre de dupliquer plusieurs trajets d'un coup pour compléter votre rapport d'IK mensuel.
+          Cet assistant va vous permettre de dupliquer plusieurs trajets d'un coup pour compléter votre rapport d'IK mensuel ou pour en garnir un nouveau en quelques secondes.
         </p>
         <p class="fs-6">
-          Sélectionnez la tâche que doit accomplir l'assistant -> Prévisualisez les trajets -> Validez ou Modifiez votre saisie.
+          <span class="badge rounded-pill btn btn-primary fs-6">1</span> <span>Sélectionnez la tâche que doit accomplir l'assistant <i class="fa fa-arrow-right"></i></span>
+          <span class="badge rounded-pill btn btn-primary fs-6">2</span> <span>Prévisualisez les trajets <i class="fa fa-arrow-right"></i></span>
+          <span class="badge rounded-pill btn btn-primary fs-6">3</span> <span>Validez ou Modifiez votre saisie.</span>
         </p>  
     </section>
 
     <section class="content-body">
         <div class="card shadow-sm w-75" >
             <div class="card-header">
-                <h4>Assistant (Beta)</h4>
+                <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Assistant</h4>
             </div>
 
             <div class="card-body">
@@ -146,15 +144,4 @@ document.getElementById('assistant-form').addEventListener('submit', function(e)
 
 {% block stylesheets %}
     {{ parent() }}
-    <style>
-        .action-fields {
-            margin-left: 20px;
-            border-left: 3px solid #ddd;
-            padding-left: 15px;
-            margin-bottom: 15px;
-        }
-        .form-check-label {
-            padding-left: 5px;
-        }
-    </style>
 {% endblock %}

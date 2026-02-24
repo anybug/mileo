@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Report;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Security;
@@ -47,16 +48,21 @@ class ReportRepository extends ServiceEntityRepository
         ;
     }
 
-    public function findByYear($year)
+    public function findByYear($year, $user=false)
     {
         $firstDay = new \DateTime("first day of January ".$year);
         $lastDay = new \DateTime("last day of December ".$year);
+
+        if(!$user)
+        {
+            $user = $this->security->getUser();
+        }
         
         return $this->createQueryBuilder('r')
             ->andWhere("r.start_date >= (:firstday)")
             ->andWhere("r.end_date <= (:lastday)")
             ->andWhere('r.user = :user')
-            ->setParameter('user', $this->security->getUser())
+            ->setParameter('user', $user)
             ->setParameter('firstday', $firstDay)
             ->setParameter('lastday', $lastDay)
             ->orderBy('r.start_date', 'ASC')

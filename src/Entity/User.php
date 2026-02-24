@@ -843,5 +843,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return trim($s);
     }
 
+    public function getReportForTravelDate(\DateTime $date)
+    {
+        foreach ($this->getReports() as $r) {
+            if ($r->getStartDate() <= $date && $r->getEndDate() >= $date) {
+                return $r;
+            }
+        }
+
+        return null;
+    }
+
 }
 

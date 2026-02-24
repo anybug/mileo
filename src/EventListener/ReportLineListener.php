@@ -6,7 +6,7 @@ use App\Entity\Report;
 use App\Entity\ReportLine;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class ReportLineListener
 {
@@ -25,39 +25,6 @@ class ReportLineListener
 
         if($entity instanceof ReportLine)
         {
-            $user = $this->security->getUser();
-            $reports = $em->getRepository(Report::class)->findByUser(['user' => $user]);
-            $date = $entity->getTravelDate();
-
-            $report = null;
-            foreach ($reports as $r) {
-                if ($r->getStartDate() <= $date && $r->getEndDate() >= $date) {
-                    $report = $r;
-                }
-            }
-
-            if($report == null){
-                $report = new Report;
-                $report->setUser($user);
-                $startMonth =  \DateTime::createFromFormat("Y-m-d",$date->format('Y-m-d'));
-                $startMonth->modify('first day of this month');
-                $endMonth =  \DateTime::createFromFormat("Y-m-d",$date->format('Y-m-d'));
-                $endMonth->modify('last day of this month');
-                $report->setStartDate($startMonth);
-                $report->setEndDate($endMonth);
-                $report->setCreatedAt(new \DateTimeImmutable());
-                //$em->persist($report);
-            }
-
-            $report->addLine($entity);
-            $report->setUpdatedAt(new \DateTimeImmutable());
-
-            /*if($entity->getReport()){
-                $scale = $entity->getReport()->isVehiculeInVehiculeReport($entity->getVehicule())->getScale();
-            }else{
-                $scale = $entity->getVehicule()->getScale();
-            }*/
-
             $scale = $entity->getVehicule()->getScale();
 
             $entity->setScale($scale);
@@ -65,6 +32,8 @@ class ReportLineListener
 
             $entity->setCreatedAt(new \DateTimeImmutable());
             $entity->setUpdatedAt(new \DateTimeImmutable());
+
+            $this->recalculateLine($args);
         }
     }
 
@@ -118,13 +87,12 @@ class ReportLineListener
         {
             $this->report = $entity->getReport();
             $this->report->setUpdatedAt(new \DateTimeImmutable());
-           
-            $em->persist($this->report);
-            $em->flush();
             
             if ($em->contains($this->report)) {
                 $em->refresh($this->report); 
             }
+
+            $em->flush();
         }
     }
 

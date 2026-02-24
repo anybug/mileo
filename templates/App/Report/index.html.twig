@@ -7,18 +7,21 @@
         {% set applied_filters = ea.request.query.all['filters']|default([])|keys %}
 
         <script>
-            $.ajax({
-                type: 'GET',
-                url: '{{ ea_url().setAction('renderFilters').includeReferrer()|raw }}',
-                data: {},
-                success: function(data){
-                    $('.ajaxFilters').html(data);
-                }
+            // Requête AJAX pour charger les filtres
+            fetch('{{ ea_url().setAction('renderFilters').includeReferrer()|raw }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.querySelector('.ajaxFilters').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des filtres :', error);
             });
 
-            $(document).on('change', '#filters_Period_value', function(e) {
-                document.getElementById("filters").submit();
-            });
         </script>
 
         <div class="ajaxFilters action-filters">
@@ -26,14 +29,6 @@
         </div>
     {% endif %}
 {% endblock filters %}
-{% block global_actions %}
-
-    <div class="global-actions">
-        {% for action in global_actions %}
-            {{ include(action.templatePath, { action: action }, with_context = false) }}
-        {% endfor %}
-    </div>
-{% endblock global_actions %}
 
 {% block table_footer %}
     {% if num_results > 0 %}

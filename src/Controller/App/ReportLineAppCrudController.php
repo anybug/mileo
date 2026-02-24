@@ -2,59 +2,60 @@
 
 namespace App\Controller\App;
 
-use App\Entity\Brand;
-use App\Entity\Scale;
-use App\Entity\Report;
-use App\Entity\Vehicule;
-use App\Utils\ReportPdf;
-use App\Entity\ReportLine;
-use App\Form\FindByMonthType;
-use Doctrine\ORM\QueryBuilder;
-use Doctrine\ORM\EntityRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use App\Controller\App\Filter\LineDateFilter;
+use App\Entity\Brand;
+use App\Entity\Report;
+use App\Entity\ReportLine;
+use App\Entity\Scale;
 use App\Entity\UserAddress;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
-use Symfony\Component\Form\ChoiceList\ChoiceList;
+use App\Entity\Vehicule;
+use App\Form\FindByMonthType;
+use App\Utils\ReportPdf;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\QueryBuilder;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
-use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use Symfony\Component\HttpFoundation\RequestStack;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\HiddenField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
-use EasyCorp\Bundle\EasyAdminBundle\Security\Permission;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
+use EasyCorp\Bundle\EasyAdminBundle\Event\AfterCrudActionEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Event\AfterEntityPersistedEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeCrudActionEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeEntityPersistedEvent;
+use EasyCorp\Bundle\EasyAdminBundle\Exception\ForbiddenActionException;
+use EasyCorp\Bundle\EasyAdminBundle\Exception\InsufficientEntityPermissionException;
 use EasyCorp\Bundle\EasyAdminBundle\Factory\EntityFactory;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Event\AfterCrudActionEvent;
-use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeCrudActionEvent;
-use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
-use EasyCorp\Bundle\EasyAdminBundle\Event\AfterEntityPersistedEvent;
-use EasyCorp\Bundle\EasyAdminBundle\Event\BeforeEntityPersistedEvent;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Exception\ForbiddenActionException;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\HiddenField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Orm\EntityRepository as EasyAdminEntityRep;
-use EasyCorp\Bundle\EasyAdminBundle\Exception\InsufficientEntityPermissionException;
+use EasyCorp\Bundle\EasyAdminBundle\Provider\AdminContextProvider;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use EasyCorp\Bundle\EasyAdminBundle\Security\Permission;
+use Symfony\Component\Form\ChoiceList\ChoiceList;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class ReportLineAppCrudController extends AbstractCrudController
 {
@@ -156,10 +157,12 @@ class ReportLineAppCrudController extends AbstractCrudController
             $actions->remove(Crud::PAGE_INDEX, Action::NEW);
         }
 
-        return $actions
+        $actions
             ->add(Crud::PAGE_INDEX, $duplicateAction)
             ->add(Crud::PAGE_EDIT, Action::DELETE)
-            ;
+        ;  
+        
+        return $actions;
     }
 
     public function edit(AdminContext $context)
@@ -217,102 +220,12 @@ class ReportLineAppCrudController extends AbstractCrudController
             $reportLine->setVehicule($this->getUser()->getDefaultVehicule());
             $reportLine->setScale($this->getUser()->getDefaultVehicule()->getScale());
             $reportLine->setTravelDate(new \DateTimeImmutable());
-
         }
 
         return $reportLine;
         
     }
 
-    public function delete(AdminContext $context)
-    {
-        /** @var ReportLine $line */
-        $line = $context->getEntity()->getInstance();
-        $report = $line->getReport(); // On garde la référence du rapport
-        $year = $line->getTravelDate()->format('Y');
-        $currentYear = (new \DateTime())->format('Y');
-
-        $em = $this->entityManager;
-        $em->remove($line);
-        $em->flush();
-
-        // Vérifier si le rapport mensuel associé est maintenant vide
-        $em->refresh($report);
-        if ($report->getLines()->isEmpty()) {
-            $em->remove($report);
-            $em->flush();
-        }
-
-        // Vérifier s’il reste des lignes globales pour cet utilisateur dans l’année supprimée
-        $remaining = $em->getRepository(ReportLine::class)
-            ->createQueryBuilder('l')
-            ->leftJoin('l.report', 'r')
-            ->where('YEAR(l.travel_date) = :y')
-            ->andWhere('r.user = :user')
-            ->setParameter('y', $year)
-            ->setParameter('user', $this->getUser())
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        // S’il reste des lignes dans la même année : redirection 
-        if ($remaining) {
-            return $this->redirect(
-                $this->adminUrlGenerator
-                    ->setController(self::class)
-                    ->setAction(Action::INDEX)
-                    ->unset('filters') 
-                    ->unset('referrer')
-                    ->generateUrl()
-            );
-        }
-
-        // redirection vers une autre année
-        if ($year !== $currentYear) {
-            return $this->redirect(
-                $this->adminUrlGenerator
-                    ->setController(self::class)
-                    ->setAction(Action::INDEX)
-                    ->unset('referrer')
-                    ->set('filters[period][value]', "01/$currentYear")
-                    ->generateUrl()
-            );
-        }
-
-        // Sinon, on cherche l'année disponible la plus proche (votre logique d'origine)
-        $years = $em->getRepository(ReportLine::class)
-            ->createQueryBuilder('l')
-            ->leftJoin('l.report', 'r')
-            ->select('DISTINCT YEAR(l.travel_date) AS yr')
-            ->andWhere('r.user = :user')
-            ->setParameter('user', $this->getUser())
-            ->orderBy('yr', 'DESC')
-            ->getQuery()
-            ->getScalarResult();
-
-        if (empty($years)) {
-            return $this->redirect(
-                $this->adminUrlGenerator
-                    ->setController(self::class)
-                    ->setAction(Action::INDEX)
-                    ->unset('filters')
-                    ->unset('referrer')
-                    ->generateUrl()
-            );
-        }
-
-        $nextYear = $years[0]['yr'];
-        $firstMonthOfYear = "01/$nextYear";
-
-        return $this->redirect(
-            $this->adminUrlGenerator
-                ->setController(self::class)
-                ->setAction(Action::INDEX)
-                ->unset('referrer')
-                ->set('filters[period][value]', $firstMonthOfYear)
-                ->generateUrl()
-        );
-    }
     
     public function configureFields(string $pageName): iterable
     {
@@ -649,6 +562,45 @@ class ReportLineAppCrudController extends AbstractCrudController
         return $response;
     }
 
+    public function persistEntity(EntityManagerInterface $entityManager, $entityInstance): void
+    {
+        $this->getReportForTravel($entityManager, $entityInstance);
+
+        parent::persistEntity($entityManager, $entityInstance);
+    }
+    
+    public function updateEntity(EntityManagerInterface $entityManager, $entityInstance): void
+    {
+        //ne devrait pas servir ici mais just in case
+        $this->getReportForTravel($entityManager, $entityInstance);
+
+        parent::updateEntity($entityManager, $entityInstance);
+    }
+
+    private function getReportForTravel(EntityManagerInterface $entityManager, $entityInstance): void
+    {
+        //si le mois du trajet saisi a déjà un Report, on le place dedans. Sinon on crée le Rapport à associer au trajet.
+        $user = $entityInstance->getVehicule()->getUser();
+        $report = $user->getReportForTravelDate($entityInstance->getTravelDate());
+
+        if($report === null){
+            $report = new Report;
+            $report->setUser($user);
+            $startMonth =  \DateTime::createFromFormat("Y-m-d",$entityInstance->getTravelDate()->format('Y-m-d'));
+            $startMonth->modify('first day of this month');
+            $endMonth =  \DateTime::createFromFormat("Y-m-d",$entityInstance->getTravelDate()->format('Y-m-d'));
+            $endMonth->modify('last day of this month');
+            $report->setStartDate($startMonth);
+            $report->setEndDate($endMonth);
+            $report->addLine($entityInstance);
+            $report->calculateKm();
+            $report->calculateTotal();
+        }else{
+            $entityInstance->setReport($report);
+        }
+
+    }
+
     public function generatePdfPerMonth(AdminContext $context)
     {
         [$month, $year] = $this->getNormalizedPeriod($context, 'period');
@@ -705,4 +657,32 @@ class ReportLineAppCrudController extends AbstractCrudController
         return $responseParameters;
     }
     
+    protected function getRedirectResponseAfterSave(AdminContext $context, string $action): RedirectResponse
+    {
+        $submitButtonName = $context->getRequest()->request->all()['ea']['newForm']['btn'] ?? null;
+
+        //retour à la liste du mois saisi (pas forcément celui du referrer)
+        $reportline = $context->getEntity()->getInstance();
+        $dataParams = $reportline->getTravelDate()->format('F')."/".$reportline->getTravelDate()->format('Y');
+
+        $saveAndReturnUrl = $this->adminUrlGenerator
+                    ->setController(self::class)
+                    ->setAction(Action::INDEX)
+                    ->set("filters[period][value]", $dataParams)
+                    ->generateUrl()
+                ;
+
+
+        $url = match ($submitButtonName) {
+            Action::SAVE_AND_CONTINUE => $this->container->get(AdminUrlGenerator::class)
+                ->setAction(Action::EDIT)
+                ->setEntityId($context->getEntity()->getPrimaryKeyValue())
+                ->generateUrl(),
+            Action::SAVE_AND_RETURN => $saveAndReturnUrl,
+            Action::SAVE_AND_ADD_ANOTHER => $this->container->get(AdminUrlGenerator::class)->setAction(Action::NEW)->generateUrl(),
+            default => $this->generateUrl($context->getDashboardRouteName()),
+        };
+
+        return $this->redirect($url);
+    }
 }

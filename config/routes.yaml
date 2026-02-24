@@ -1,6 +1,10 @@
+homepage :
+  path: /
+  controller: App\Controller\SecurityController::default
+
 security_registration :
   path: /register
-  controller: App\Controller\SecurityController::registration
+  controller: App\Controller\SecurityController::registration  
 
 security_login :
   path: /login

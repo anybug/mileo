@@ -6,7 +6,12 @@
  */
 
 // any CSS you import will output into a single css file (app.css in this case)
-//import './styles/app.css';
+import './styles/app.css';
 
 // start the Stimulus application
-import './bootstrap';
+import 'chart.js';
+import './jqscript.js';
+
+import { startStimulusApp } from '@symfony/stimulus-bundle';
+
+const app = startStimulusApp();

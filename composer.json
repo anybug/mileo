@@ -9,7 +9,6 @@
         "ext-iconv": "*",
         "beberlei/doctrineextensions": "^1.5",
         "composer/package-versions-deprecated": "1.11.99.1",
-        "doctrine/annotations": "^1.0",
         "doctrine/dbal": "^2.6",
         "doctrine/doctrine-bundle": "^2.3",
         "doctrine/doctrine-migrations-bundle": "^3.1",
@@ -17,6 +16,7 @@
         "easyadminfriends/easyadmindashboard-bundle": "^3.0",
         "easycorp/easyadmin-bundle": "^4.0",
         "flux-se/payum-stripe-bundle": "^2.0",
+        "gedmo/doctrine-extensions": "^3.13",
         "google/recaptcha": "^1.2",
         "gregwar/captcha-bundle": "^2.2",
         "knplabs/knp-snappy-bundle": "^1.8",
@@ -28,13 +28,14 @@
         "php-http/async-client-implementation": "*",
         "php-http/discovery": "^1.20",
         "php-http/httplug": "^2.4",
-        "php-http/message-factory": "^1.1",
         "phpdocumentor/reflection-docblock": "^5.2",
         "phpoffice/phpspreadsheet": "^5.2",
-        "sensio/framework-extra-bundle": "^6.2",
+        "sensiolabs/minify-bundle": "^1.2",
+        "stof/doctrine-extensions-bundle": "^1.10",
         "stripe/stripe-php": "^7.80",
         "symfony/apache-pack": "^1.0",
         "symfony/asset": "6.4.*",
+        "symfony/asset-mapper": "6.4.*",
         "symfony/console": "6.4.*",
         "symfony/dotenv": "6.4.*",
         "symfony/expression-language": "6.4.*",
@@ -53,13 +54,13 @@
         "symfony/proxy-manager-bridge": "6.4.*",
         "symfony/security-bundle": "6.4.*",
         "symfony/serializer": "6.4.*",
+        "symfony/stimulus-bundle": "^2.32",
         "symfony/string": "6.4.*",
         "symfony/translation": "6.4.*",
-        "symfony/twig-bundle": "^5.2",
-        "symfony/ux-chartjs": "^2.1",
+        "symfony/twig-bundle": "6.4.*",
+        "symfony/ux-chartjs": "^2.32",
         "symfony/validator": "6.4.*",
         "symfony/web-link": "6.4.*",
-        "symfony/webpack-encore-bundle": "^1.14",
         "symfony/yaml": "6.4.*",
         "tecnickcom/tcpdf": "^6.4",
         "twig/extra-bundle": "^2.12|^3.0",
@@ -110,7 +111,9 @@
     "scripts": {
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+            "assets:install %PUBLIC_DIR%": "symfony-cmd",
+            "importmap:install": "symfony-cmd"
+            
         },
         "post-install-cmd": [
             "@auto-scripts"

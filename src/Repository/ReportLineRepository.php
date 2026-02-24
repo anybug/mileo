@@ -5,7 +5,7 @@ namespace App\Repository;
 use App\Entity\ReportLine;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Bundle\SecurityBundle\Security;
 
 /**
  * @method ReportLine|null find($id, $lockMode = null, $lockVersion = null)

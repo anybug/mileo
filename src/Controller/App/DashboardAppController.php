@@ -17,6 +17,7 @@ use App\Form\UserStep3Type;
 use App\Entity\Subscription;
 use Symfony\Component\Mime\Email;
 use Symfony\UX\Chartjs\Model\Chart;
+use Symfony\Component\Asset\Packages;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Controller\Admin\UserCrudController;
 use Symfony\Component\HttpFoundation\Request;
@@ -52,12 +53,16 @@ class DashboardAppController extends AbstractDashboardController
     private $entityManager;
     private $adminUrlGenerator;
 
+    private Packages $assets;
+
+
     public function __construct(
         AdminUrlGenerator $adminUrlGenerator, 
         EasyAdminDashboard $easyAdminDashboard,
         ChartBuilderInterface $chartBuilder,
         EntityManagerInterface $entityManager, 
-        FormFactoryInterface $formFactory
+        FormFactoryInterface $formFactory,
+        Packages $assets
     )
     {
         $this->adminUrlGenerator = $adminUrlGenerator;
@@ -65,6 +70,7 @@ class DashboardAppController extends AbstractDashboardController
         $this->chartBuilder = $chartBuilder;
         $this->entityManager = $entityManager;
         $this->formFactory = $formFactory;
+        $this->assets = $assets;
     }
 
     public function configureCrud(): Crud
@@ -80,35 +86,25 @@ class DashboardAppController extends AbstractDashboardController
     public function configureActions(): Actions
     {
 
-        return Actions::new()
-            ->add(Crud::PAGE_INDEX, Action::NEW)
-            ->add(Crud::PAGE_INDEX, Action::EDIT)
-            ->update(Crud::PAGE_INDEX, Action::EDIT, function (Action $action) {
-                return $action->setIcon("fa fa-pen")->setLabel("Modify");
-            })
-            ->add(Crud::PAGE_INDEX, Action::DELETE)
-            ->update(Crud::PAGE_INDEX, Action::DELETE, function (Action $action) {
-                return $action->setIcon("fa fa-trash");
+        $actions = parent::configureActions();
+
+        return $actions
+            ->add(Crud::PAGE_EDIT, Action::INDEX)
+            ->update(Crud::PAGE_EDIT, Action::INDEX, function (Action $action) {
+                return $action->setIcon("fa fa-arrow-left")->setLabel("Retour");
             })
 
-            ->add(Crud::PAGE_DETAIL, Action::EDIT)
-            ->add(Crud::PAGE_DETAIL, Action::INDEX)
-            ->add(Crud::PAGE_DETAIL, Action::DELETE)
-
-            ->add(Crud::PAGE_EDIT, Action::SAVE_AND_RETURN)
-            ->add(Crud::PAGE_EDIT, Action::SAVE_AND_CONTINUE)
-
-            ->add(Crud::PAGE_NEW, Action::SAVE_AND_RETURN)
-            ->add(Crud::PAGE_NEW, Action::SAVE_AND_ADD_ANOTHER)
+            ->add(Crud::PAGE_NEW, Action::INDEX)
+            ->update(Crud::PAGE_NEW, Action::INDEX, function (Action $action) {
+                return $action->setIcon("fa fa-arrow-left")->setLabel("Retour");
+            })
         ;
     }
 
     public function configureAssets(): Assets
     {
         return Assets::new()
-        ->addWebpackEncoreEntry('app')
-        ->addCssFile("assets/css/backend.css")
-        ->addJsFile('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js')
+        ->addAssetMapperEntry('app')
         ;
     }
 
@@ -299,10 +295,11 @@ class DashboardAppController extends AbstractDashboardController
 
     public function configureDashboard(): Dashboard
     {
+        //dd($this->assets->getUrl('img/logo.png'));
         return Dashboard::new()
             //->setTitle('Mileo')
-            ->setTitle('<img src="/assets/img/logo.png" />')
-            ->setFaviconPath('assets/img/favicons/favicon.ico')
+            ->setTitle(sprintf('<img src="%s" />', $this->assets->getUrl('img/logo.png')))
+            ->setFaviconPath($this->assets->getUrl('img/favicons/favicon.ico'))
             ->disableDarkMode()
             ;
     }

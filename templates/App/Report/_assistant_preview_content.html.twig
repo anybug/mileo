@@ -1,7 +1,21 @@
 {# templates/admin/_assistant_preview_content.html.twig #}
 <div class="alert alert-info w-75 mt-3">
     <div>
-        <strong>Prévisualisation des trajets à ajouter au Rapport de {{ report.getPeriod() }}</strong>
+        {% set previewTxt = 'à ajouter au' %}
+        {% set previewPeriodLabel %}
+            {% if action is defined and action == 'duplicate_report' and targetPeriod is defined and targetPeriod %}
+                {{ ((targetPeriod ~ '-01')|date)|format_date(pattern='MMMM yyyy')|capitalize }}
+                {% set previewTxt = 'à créer dans le' %}
+            {% else %}
+                {{ report.getPeriod() }}
+            {% endif %}
+        {% endset %}
+
+        <strong>
+            {{ "Prévisualisation des trajets"|trans }} {{ previewTxt|trans }} {{ "Rapport d'IK de"|trans }} {{ previewPeriodLabel }}
+        </strong>
+
+
         <span class="badge rounded-pill bg-primary text-light">
 
             {% if previewTrips|length > 0 %}
@@ -24,16 +38,16 @@
 <table class="table table-bordered w-75">
     <thead>
         <tr>
-            <th style="display: none"></th>
+            <th class="d-none"></th>
             <th>Date</th>
             <th>Départ</th>
             <th>Arrivée</th>
             <th>Km</th>
             <th>Aller-retour</th>
             <th>Km total</th>
-            <th style="display: none">Véhicule</th>
+            <th class="d-none">Véhicule</th>
             <th>Montant</th>
-            <th>Commentaire</th>
+            <th>Motif</th>
         </tr>
     </thead>
     <tbody>
@@ -74,10 +88,10 @@
     {# Boutons de confirmation/annulation #}
     <div class="mt-3">
         <button type="submit" class="btn btn-success js-confirm-dup">
-            <i class="fa fa-check"></i> Confirmer la création des trajets
+            <i class="fa fa-check"></i> {{"Confirmer la création des trajets"|trans }}
         </button>
         <a href="{{ backUrl }}" class="btn btn-danger">
-            <i class="fa fa-times"></i> Annuler
+            <i class="fa fa-times"></i> {{"Annuler"|trans }}
         </a>
     </div>
 </form>

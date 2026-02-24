@@ -73,7 +73,8 @@ class ManagerProfileCrudController extends AbstractCrudController
             return $action
                 ->setLabel('Retour au profil')
                 ->setIcon('fa fa-arrow-left')
-                ->setCssClass('btn btn-secondary');
+                ->asDefaultAction()
+            ;
         });
 }
 
