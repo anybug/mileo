@@ -4,7 +4,7 @@ window.$ = window.jQuery = $;
 
 $(document).ready(function () {
 
-    console.log('AssetMapper est opérationnel !');
+    //console.log('AssetMapper est opérationnel !');
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
