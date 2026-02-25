@@ -52,23 +52,6 @@ class DashboardManagerController extends AbstractDashboardController
             ->disableDarkMode();
     }
 
-    public function configureActions(): Actions
-    {
-
-        $actions = parent::configureActions();
-
-        return $actions
-            ->add(Crud::PAGE_EDIT, Action::INDEX)
-            ->update(Crud::PAGE_EDIT, Action::INDEX, function (Action $action) {
-                return $action->setIcon("fa fa-arrow-left")->setLabel("Retour");
-            })
-
-            ->add(Crud::PAGE_NEW, Action::INDEX)
-            ->update(Crud::PAGE_NEW, Action::INDEX, function (Action $action) {
-                return $action->setIcon("fa fa-arrow-left")->setLabel("Retour");
-            })
-        ;
-    }
 
     public function configureAssets(): Assets
     {
