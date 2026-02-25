@@ -56,9 +56,8 @@ class ManagerProfileCrudController extends AbstractCrudController
         return $crud
             ->setSearchFields(null)
             ->overrideTemplate('crud/index', 'Team/Profile/index.html.twig')
-            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier mon profil')
-            ->overrideTemplate('crud/edit', 'Team/advanced_edit.html.twig')
-            ->overrideTemplate('crud/new', 'Team/advanced_new.html.twig');
+            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier mon profil manager')
+            ;
     }
 
     public function configureActions(Actions $actions): Actions

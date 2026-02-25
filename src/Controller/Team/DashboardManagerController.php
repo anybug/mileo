@@ -2,37 +2,46 @@
 
 namespace App\Controller\Team;
 
-use App\Entity\User;
-use App\Entity\Vehicule;
+use App\Controller\Team\TeamAddressesCrudController;
 use App\Entity\ReportLine;
+use App\Entity\User;
 use App\Entity\UserAddress;
+use App\Entity\Vehicule;
+use EasyAdminFriends\EasyAdminDashboardBundle\Service\EasyAdminDashboard;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
+use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use Symfony\Component\Asset\Packages;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
-use App\Controller\Team\TeamAddressesCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
-use Symfony\Component\ExpressionLanguage\Expression;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 
 #[IsGranted(new Expression('is_granted("ROLE_MANAGER") or is_granted("ROLE_PREVIOUS_ADMIN")'))]
 class DashboardManagerController extends AbstractDashboardController
 {
     private Packages $assets;
+    private $easyAdminDashboard;
+    
     public function __construct(
         Packages $packages,
+        EasyAdminDashboard $easyAdminDashboard
         )
     {
         $this->assets = $packages;
+        $this->easyAdminDashboard = $easyAdminDashboard;
     }
 
     #[Route('/manager', name: 'manager_dashboard')]
     public function index(): Response
     {
-        return $this->render('Team/Dashboard/index.html.twig');
+        return $this->render('Team/Dashboard/index.html.twig', [
+            'dashboard' => $this->easyAdminDashboard->getDashboard(),
+        ]);
     }
 
     public function configureDashboard(): Dashboard
@@ -41,6 +50,24 @@ class DashboardManagerController extends AbstractDashboardController
             ->setTitle(sprintf('<img src="%s" />', $this->assets->getUrl('img/logo.png')))
             ->setFaviconPath($this->assets->getUrl('img/favicons/favicon.ico'))
             ->disableDarkMode();
+    }
+
+    public function configureActions(): Actions
+    {
+
+        $actions = parent::configureActions();
+
+        return $actions
+            ->add(Crud::PAGE_EDIT, Action::INDEX)
+            ->update(Crud::PAGE_EDIT, Action::INDEX, function (Action $action) {
+                return $action->setIcon("fa fa-arrow-left")->setLabel("Retour");
+            })
+
+            ->add(Crud::PAGE_NEW, Action::INDEX)
+            ->update(Crud::PAGE_NEW, Action::INDEX, function (Action $action) {
+                return $action->setIcon("fa fa-arrow-left")->setLabel("Retour");
+            })
+        ;
     }
 
     public function configureAssets(): Assets
@@ -54,6 +81,7 @@ class DashboardManagerController extends AbstractDashboardController
     {
         return Crud::new()
             ->showEntityActionsInlined()
+            ->overrideTemplate('layout', 'Team/advanced_layout.html.twig')
         ;
     }
 
@@ -62,7 +90,7 @@ class DashboardManagerController extends AbstractDashboardController
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Équipe');
-        yield MenuItem::linkToCrud('Members', 'fa fa-users', User::class)
+        yield MenuItem::linkToCrud('Membres collaborateurs', 'fa fa-users', User::class)
             ->setController(TeamUserCrudController::class);
         yield MenuItem::linkToCrud('Flotte de véhicules', 'fa fa-car', Vehicule::class)
             ->setController(TeamVehiculeCrudController::class);

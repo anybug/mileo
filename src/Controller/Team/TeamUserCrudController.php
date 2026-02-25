@@ -48,7 +48,7 @@ class TeamUserCrudController extends AbstractCrudController
         return $crud
             ->setEntityLabelInSingular('Membre')
             ->setEntityLabelInPlural('Membres')
-            ->setPageTitle(Crud::PAGE_INDEX, 'Membres de mon équipe')
+            ->setPageTitle(Crud::PAGE_INDEX, 'Membres collaborateurs de l\'équipe <br /><span class="fs-6 fw-normal">Gestion de l\'effectif de votre équipe: chacun des membres peut se connecter à la plateforme indépendamment afin d\'effectuer sa saisie en toute autonomie. <br />Vous pouvez aussi vous connecter à leur compte à des fins de saisie ou de vérification.</span>')
             ->setDefaultSort(['last_name' => 'ASC', 'first_name' => 'ASC'])
             ->setSearchFields(['first_name', 'last_name', 'email']);
     }
@@ -70,8 +70,6 @@ class TeamUserCrudController extends AbstractCrudController
                     return $entity != $this->getUser();
                 });
             })
-            ->add(Crud::PAGE_NEW, Action::INDEX)
-            ->add(Crud::PAGE_EDIT, Action::INDEX)
             ->update(Crud::PAGE_INDEX, Action::EDIT, function (Action $action) {
                 return $action->displayIf(function ($entity) {
                     return $entity != $this->getUser();

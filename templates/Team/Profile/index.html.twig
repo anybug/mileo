@@ -1,7 +1,7 @@
-{% extends 'App/advanced_layout.html.twig' %}
+{% extends '@!EasyAdmin/layout.html.twig' %}
 
 {% block content_title %}
-    {{ 'Mon profil Mileo'|trans }}
+    {{ 'Mon profil Mileo manager'|trans }}
 {% endblock %}
 
 {% block main %}
@@ -51,7 +51,7 @@
                                 .setEntityId(app.user.id)
                             %}
 
-                            <div class="fs-5"><a href="{{ editUrl }}"><i class="fa-solid fa-pen-to-square"></i> Modifier</a></div>
+                            <div class="fs-5"><a href="{{ editUrl }}" class="btn btn-primary action-edit"><i class="fa-solid fa-pen"></i> Modifier</a></div>
                         </div>
                         <div class="card-body bg-light">
                             <div class="row">
@@ -202,7 +202,6 @@
                         </div>
                     </div>
                 </div>    
-
             </div>
 
             {# --- Bouton suppression compte (index uniquement, dans ce template) --- #}
@@ -211,3 +210,4 @@
         </div>
     </div>
 {% endblock %}
+  

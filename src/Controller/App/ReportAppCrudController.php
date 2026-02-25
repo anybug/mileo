@@ -141,9 +141,9 @@ class ReportAppCrudController extends AbstractCrudController
     {
         return $crud
             ->setDefaultSort(['start_date' => 'ASC'])
-            ->setPageTitle('index', 'Reports')
-            ->setPageTitle('edit', fn (Report $r) => sprintf('Modifier le rapport de %s', $r->getPeriod()))
-            ->setPageTitle('new', 'New report period')
+            ->setPageTitle(Crud::PAGE_INDEX, 'Rapports annuels et provisions mensuelles<br /><span class="fs-6 fw-normal">Mode de saisie <i>au mois</i>: chaque rapport contient les trajets effectués le mois concerné. Vous pouvez ajouter/modifier autant de trajets par Rapport que nécessaire, n\'hésitez pas à utiliser l\'assistant pour vous aider.<br />Vous pouvez également opter pour le mode de saisie <i>trajet par trajet</i> depuis le menu Mes trajets.</span>')
+            ->setPageTitle(Crud::PAGE_EDIT, fn (Report $r) => sprintf('Modifier le rapport de %s', $r->getPeriod()))
+            ->setPageTitle(Crud::PAGE_NEW, 'New report period')
 
             ->overrideTemplate('crud/index', 'App/Report/index.html.twig')
             ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')

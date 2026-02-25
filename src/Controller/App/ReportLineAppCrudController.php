@@ -103,9 +103,9 @@ class ReportLineAppCrudController extends AbstractCrudController
     {
         return $crud
             ->setDefaultSort(['travel_date' => 'ASC'])
-            ->setPageTitle('index', 'My travels')
-            ->setPageTitle('new', 'Saisir un trajet')
-            ->setPageTitle('edit', fn (ReportLine $reportLine) => sprintf('Modifier trajet du %s', $reportLine->getTravelDate()->format("d/m/Y")))
+            ->setPageTitle(Crud::PAGE_INDEX, 'Mes trajets <br /><span class="fs-6 fw-normal">Mode de saisie <i>trajet par trajet</i>: les trajets saisis ici sont automatiquement regroupés dans un rapport mensuel. <br />Vous pouvez également opter pour le mode de saisie <i>au mois</i> depuis le menu Rapports.</span>')
+            ->setPageTitle(Crud::PAGE_NEW, 'Saisir un trajet')
+            ->setPageTitle(Crud::PAGE_EDIT, fn (ReportLine $reportLine) => sprintf('Modifier trajet du %s', $reportLine->getTravelDate()->format("d/m/Y")))
             ->showEntityActionsInlined()
             ->overrideTemplate('crud/index', 'App/ReportLine/index.html.twig')
             ->overrideTemplate('crud/filters', 'App/ReportLine/filters.html.twig')

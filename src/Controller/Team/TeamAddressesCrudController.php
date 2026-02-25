@@ -71,9 +71,7 @@ class TeamAddressesCrudController extends AbstractCrudController
     public function configureCrud(Crud $crud): Crud
     {
         return $crud
-        ->setPageTitle('index', 'Adresses du groupe <br /><span class="fs-6">Les adresses saisies ici seront accessibles par chacun de vos membres.</span>')
-        ->overrideTemplate('crud/edit', 'Team/advanced_edit.html.twig')
-        ->overrideTemplate('crud/new', 'Team/advanced_new.html.twig')
+            ->setPageTitle('index', 'Carnet d\'adresses du groupe <br /><span class="fs-6 fw-normal">Les adresses saisies ici seront accessibles par chacun de vos membres.</span>')
         ;
     }
 

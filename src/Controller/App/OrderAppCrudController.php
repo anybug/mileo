@@ -47,8 +47,6 @@ class OrderAppCrudController extends AbstractCrudController
 
     public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
     {
-        // request : liste des affaires où l'utilisateur est le créateur
-
         $qb = parent::createIndexQueryBuilder($searchDto, $entityDto, $fields, $filters);
         $qb->andWhere('entity.user = (:user)');
         $qb->setParameter('user', $this->getUser());

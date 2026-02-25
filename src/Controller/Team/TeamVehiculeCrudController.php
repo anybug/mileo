@@ -50,9 +50,11 @@ class TeamVehiculeCrudController extends AbstractCrudController
     public function configureCrud(Crud $crud): Crud
     {
         return $crud
-            ->setPageTitle(Crud::PAGE_INDEX, 'Flotte de véhicule')
-            ->overrideTemplate('crud/edit', 'Team/advanced_edit.html.twig')
-            ->overrideTemplate('crud/new', 'Team/advanced_new.html.twig');
+            ->setPageTitle(Crud::PAGE_INDEX, 'Flotte de véhicules <br /><span class="fs-6 fw-normal">Chaque membre peut se voir attribué un ou plusieurs véhicules.</span>')
+            ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
+            ->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
+            ->setSearchFields(['model', 'user.first_name', 'user.last_name', 'user.email'])
+            ;
     }
 
     public function configureActions(Actions $actions): Actions
@@ -62,7 +64,9 @@ class TeamVehiculeCrudController extends AbstractCrudController
                 return $action->displayIf(function (Vehicule $entity) {
                     return $entity->getReportlines()->isEmpty() && !$entity->getIsDefault();
                 });
-            });
+            })
+            ->remove(Crud::PAGE_INDEX, Action::BATCH_DELETE)
+            ;
     }
 
     public function createIndexQueryBuilder(
@@ -84,7 +88,7 @@ class TeamVehiculeCrudController extends AbstractCrudController
     public function configureFields(string $pageName): iterable
     {
         if (Crud::PAGE_INDEX === $pageName) {
-            yield AssociationField::new('user', 'Propriétaire');
+            yield AssociationField::new('user', 'Propriétaire')->setTemplateName('crud/field/generic');
             yield ChoiceField::new('type', 'Type')->setChoices([
                 'Voiture' => 'Car',
                 'Moto/Cyclo' => 'Cyclo',
@@ -108,7 +112,8 @@ class TeamVehiculeCrudController extends AbstractCrudController
                         ->andWhere('u = :me OR u.managedBy = :me')
                         ->setParameter('me', $this->getUser());
                 },
-            ]);
+            ])
+            ;
 
         yield ChoiceField::new('type', 'Type')->setChoices([
             'Voiture' => 'Car',

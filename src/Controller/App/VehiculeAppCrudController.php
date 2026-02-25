@@ -60,6 +60,7 @@ class VehiculeAppCrudController extends AbstractCrudController
         return $crud
         ->overrideTemplate('crud/edit', 'App/advanced_edit.html.twig')
         ->overrideTemplate('crud/new', 'App/advanced_new.html.twig')
+        ->setSearchFields(['model', 'user.first_name', 'user.last_name', 'user.email'])
         ;
     }
 
@@ -70,7 +71,9 @@ class VehiculeAppCrudController extends AbstractCrudController
                 return $action->displayIf(function ($entity) {
                     return $entity->getReportlines()->isEmpty() && !$entity->getIsDefault();
                 });
-            });
+            })
+            ->remove(Crud::PAGE_INDEX, Action::BATCH_DELETE)
+            ;
         ;
     }
 
@@ -99,9 +102,9 @@ class VehiculeAppCrudController extends AbstractCrudController
             }
         ]);
         yield AssociationField::new('brand','Marque')->setFormTypeOptions(['required' => false, 'attr' => ['data-placeholder' => " ", 'required' => 'required'], 'label_attr' => ['class' => 'required']]);
-        yield Field::new('model','Modèle');
+        yield Field::new('model', 'Modèle');
         yield AssociationField::new('power','Puissance Fiscale')
-            ->setFormTypeOptions(['attr' => ['data-placeholder' => " ",'class' => 'bg-light vehicule_power', 'disabled' => 'disabled'], 'choices' => []]);
+            ->setFormTypeOptions(['attr' => ['data-placeholder' => " ", 'class' => 'bg-light vehicule_power', 'disabled' => 'disabled'], 'choices' => []]);
         yield AssociationField::new('scale', 'Barème : estimation de la distance annuelle parcourue')
             ->setFormTypeOptions([
                 'required' => true, 
