@@ -28,6 +28,8 @@
         "php-http/async-client-implementation": "*",
         "php-http/discovery": "^1.20",
         "php-http/httplug": "^2.4",
+        "php-http/message": "^1.16",
+        "php-http/message-factory": "^1.1",
         "phpdocumentor/reflection-docblock": "^5.2",
         "phpoffice/phpspreadsheet": "^5.2",
         "sensiolabs/minify-bundle": "^1.2",
